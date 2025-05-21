@@ -5,11 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <style>
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
+        [x-cloak] { display: none !important; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans">
@@ -43,15 +45,26 @@
                     <button class="text-gray-700 px-4 py-2 rounded-full">One way</button>
                     <button class="text-gray-700 px-4 py-2 rounded-full">Multi-city</button>
                 </div>
-                <div class="flex space-x-4">
-                    <button class="text-gray-700 flex items-center">
+                <div class="flex space-x-4 items-center">
+                    <button class="text-gray-700 flex items-center py-2">
                         <span class="material-symbols-outlined mr-1">person</span>
                         1 passenger
                     </button>
-                    <button class="text-gray-700 flex items-center">
-                        <span class="material-symbols-outlined mr-1">chair</span>
-                        Economy
-                    </button>
+                    <div class="relative" x-data="{ open: false, selectedClass: 'Economy' }">
+                        <button @click="open = !open" class="text-gray-700 flex items-center py-2">
+                            <span class="material-symbols-outlined mr-1">chair</span>
+                            <span x-text="selectedClass">Economy</span>
+                            <span class="material-symbols-outlined ml-1">arrow_drop_down</span>
+                        </button>
+                        <div x-show="open" @click.away="open = false" x-cloak class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+                            <div class="py-1">
+                                <a href="#" @click.prevent="selectedClass = 'Economy'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Economy</a>
+                                <a href="#" @click.prevent="selectedClass = 'Premium economy'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Premium economy</a>
+                                <a href="#" @click.prevent="selectedClass = 'Business'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Business</a>
+                                <a href="#" @click.prevent="selectedClass = 'First'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">First</a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
