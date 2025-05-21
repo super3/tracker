@@ -41,7 +41,7 @@
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
             <div class="flex flex-col md:flex-row justify-between mb-4">
                 <div class="flex space-x-4 mb-4 md:mb-0">
-                    <button class="bg-blue-600 text-white px-4 py-2 rounded-full">Round trip</button>
+                    <button class="bg-blue-600 text-white px-4 py-2 rounded-full">Flexible Dates</button>
                 </div>
                 <div class="flex space-x-4 items-center">
                     <div class="relative" x-data="{ open: false, passengerCount: 1 }">
@@ -140,10 +140,9 @@
                             </button>
                             <div x-show="open" @click.away="open = false" x-cloak class="absolute left-0 right-0 mt-2 bg-white rounded-md shadow-lg z-10">
                                 <div class="p-3">
-                                    <div class="mb-3">
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Duration</label>
+                                    <div class="mb-4 pb-3 border-b border-gray-200">
                                         <div class="flex items-center justify-between mb-2">
-                                            <span class="text-sm">Days</span>
+                                            <span class="text-sm font-medium text-gray-700">Days</span>
                                             <div class="flex items-center space-x-3">
                                                 <button @click="selectedDuration = selectedDuration.replace(/^\d+/, Math.max(2, parseInt(selectedDuration.match(/^\d+/)[0]) - 1))" 
                                                         class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center" 
@@ -160,20 +159,20 @@
                                         </div>
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Month</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Month</label>
                                         <div class="grid grid-cols-4 gap-2">
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in Jan'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Jan</button>
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in Feb'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Feb</button>
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in Mar'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Mar</button>
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in Apr'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Apr</button>
+                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in January'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Jan</button>
+                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in February'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Feb</button>
+                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in March'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Mar</button>
+                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in April'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Apr</button>
                                             <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in May'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">May</button>
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in Jun'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100" :class="selectedDuration.includes('June') ? 'bg-blue-50 border-blue-200' : ''">Jun</button>
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in Jul'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Jul</button>
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in Aug'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Aug</button>
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in Sep'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Sep</button>
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in Oct'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Oct</button>
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in Nov'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Nov</button>
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in Dec'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Dec</button>
+                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in June'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100" :class="selectedDuration.includes('June') ? 'bg-blue-50 border-blue-200' : ''">Jun</button>
+                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in July'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Jul</button>
+                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in August'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Aug</button>
+                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in September'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Sep</button>
+                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in October'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Oct</button>
+                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in November'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Nov</button>
+                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in December'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Dec</button>
                                         </div>
                                     </div>
                                 </div>
