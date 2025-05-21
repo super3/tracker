@@ -42,14 +42,38 @@
             <div class="flex flex-col md:flex-row justify-between mb-4">
                 <div class="flex space-x-4 mb-4 md:mb-0">
                     <button class="bg-blue-600 text-white px-4 py-2 rounded-full">Round trip</button>
-                    <button class="text-gray-700 px-4 py-2 rounded-full">One way</button>
-                    <button class="text-gray-700 px-4 py-2 rounded-full">Multi-city</button>
                 </div>
                 <div class="flex space-x-4 items-center">
-                    <button class="text-gray-700 flex items-center py-2">
-                        <span class="material-symbols-outlined mr-1">person</span>
-                        1 passenger
-                    </button>
+                    <div class="relative" x-data="{ open: false, passengerCount: 1 }">
+                        <button @click="open = !open" class="text-gray-700 flex items-center py-2">
+                            <span class="material-symbols-outlined mr-1">person</span>
+                            <span x-text="passengerCount" class="inline-block min-w-[14px] text-center">1</span>
+                            <span class="material-symbols-outlined ml-1">arrow_drop_down</span>
+                        </button>
+                        <div x-show="open" @click.away="open = false" x-cloak class="absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg z-10 p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="font-medium">Travelers</div>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <button @click="passengerCount = Math.max(1, passengerCount - 1)" 
+                                            class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center" 
+                                            :class="passengerCount <= 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'">
+                                        <span class="material-symbols-outlined text-sm">remove</span>
+                                    </button>
+                                    <span x-text="passengerCount" class="min-w-[20px] text-center">1</span>
+                                    <button @click="passengerCount = Math.min(9, passengerCount + 1)" 
+                                            class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center"
+                                            :class="passengerCount >= 9 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'">
+                                        <span class="material-symbols-outlined text-sm">add</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div x-show="passengerCount >= 9" class="mt-2 text-red-500 text-xs text-center">
+                                Sorry, 9 travelers is the max.
+                            </div>
+                        </div>
+                    </div>
                     <div class="relative" x-data="{ open: false, selectedClass: 'Economy' }">
                         <button @click="open = !open" class="text-gray-700 flex items-center py-2">
                             <span class="material-symbols-outlined mr-1">chair</span>
