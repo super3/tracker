@@ -13,6 +13,16 @@
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
         [x-cloak] { display: none !important; }
+        
+        @keyframes flashBorder {
+            0% { border-color: rgb(239, 68, 68); }
+            100% { border-color: rgb(239, 68, 68); }
+        }
+        
+        .flash-border {
+            animation: flashBorder 1s 1;
+            border-color: rgb(239, 68, 68);
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans">
@@ -93,7 +103,7 @@
                 </div>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div x-data="searchForm()" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <div class="border border-gray-300 rounded-lg p-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 grid-input">
                     <label class="block text-sm text-gray-600 mb-1">Budget (per person)</label>
                     <div class="flex items-center">
@@ -140,7 +150,10 @@
                     </div>
                 </div>
                 
-                <div class="border border-gray-300 rounded-lg p-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 grid-input">
+                <div 
+                    class="border border-gray-300 rounded-lg p-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 grid-input"
+                    :class="{ 'flash-border': toFieldError }"
+                    x-ref="toField">
                     <label class="block text-sm text-gray-600 mb-1">To</label>
                     <div class="flex items-center relative" x-data="airportTo()">
                         <span class="material-symbols-outlined text-gray-500 mr-2">flight_land</span>
@@ -150,6 +163,7 @@
                                 placeholder="Where to?" 
                                 class="w-full outline-none text-lg" 
                                 x-model="search"
+                                x-ref="toInput"
                                 @focus="showDropdown = true"
                                 @click.away="showDropdown = false"
                                 @keydown.escape="showDropdown = false"
@@ -217,13 +231,16 @@
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="flex items-center justify-center mb-4">
-                <button class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition flex items-center">
-                    <span class="material-symbols-outlined mr-2">search</span>
-                    Search
-                </button>
+                
+                <div class="flex items-center justify-center mb-4 col-span-1 md:col-span-2 lg:col-span-4">
+                    <button 
+                        class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition flex items-center"
+                        @click="validateSearch"
+                    >
+                        <span class="material-symbols-outlined mr-2">search</span>
+                        Search
+                    </button>
+                </div>
             </div>
         </div>
         

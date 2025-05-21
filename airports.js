@@ -157,6 +157,35 @@ function findNearestAirport(userLat, userLng) {
 }
 
 // Make Alpine components available globally
+window.searchForm = function() {
+    return {
+        toFieldError: false,
+        
+        validateSearch() {
+            // Find the To input field
+            const toField = document.querySelector('.grid-input:nth-of-type(3)');
+            const toInput = toField.querySelector('input');
+            
+            // Check if there's a destination selected
+            if (!toInput || !toInput.value.trim()) {
+                // Flash the border red once
+                this.toFieldError = true;
+                
+                // Reset the error state after the animation completes
+                setTimeout(() => {
+                    this.toFieldError = false;
+                }, 1000);
+                
+                return false;
+            }
+            
+            // If validation passes, proceed with search
+            console.log('Search validated, proceeding with form submission');
+            return true;
+        }
+    };
+};
+
 window.airportFrom = function() {
     return {
         airports: airports,
