@@ -229,14 +229,6 @@ async function searchFlights(from, to, departDate, returnDate) {
       console.log('Error handling popups:', popupError.message);
     }
     
-    // Try to take a screenshot of results
-    try {
-      await page.screenshot({ path: 'google-flights-results.png', fullPage: true });
-      console.log('Screenshot saved of results page');
-    } catch (screenshotError) {
-      console.log('Failed to take screenshot of results:', screenshotError.message);
-    }
-    
     // Scroll down to ensure all content is loaded
     console.log('Scrolling to load all content...');
     await page.evaluate(() => {
