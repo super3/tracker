@@ -87,14 +87,6 @@ async function searchFlights(from, to, departDate, returnDate) {
     console.log('Setting return date...');
     await enterDate(page, 'Return', returnDate);
     
-    // Take a screenshot before search
-    try {
-      await page.screenshot({ path: 'google-flights-before-search.png' });
-      console.log('Screenshot saved before search');
-    } catch (e) {
-      console.log('Failed to take screenshot before search:', e.message);
-    }
-    
     // Click the search button
     console.log('Executing search...');
     const searchButtonSelectors = [
@@ -291,8 +283,59 @@ async function searchFlights(from, to, departDate, returnDate) {
           
           // Extract times
           const timeMatches = text.match(/\d{1,2}:\d{2}\s*[AP]M/g);
-          const departureTime = timeMatches && timeMatches.length > 0 ? timeMatches[0] : 'Time not found';
-          const arrivalTime = timeMatches && timeMatches.length > 1 ? timeMatches[1] : 'Time not found';
+          let departureTime = 'Time not found';
+          let arrivalTime = 'Time not found';
+          
+          if (timeMatches && timeMatches.length >= 2) {
+            // Look for a pattern that suggests departure and arrival
+            // The pattern is often departure time followed by " – " then arrival time
+            const dashIndex = text.indexOf(' – ');
+            if (dashIndex !== -1) {
+              // Look for times before and after the dash
+              const beforeDash = text.substring(0, dashIndex);
+              const afterDash = text.substring(dashIndex + 3);
+              
+              const beforeTimes = beforeDash.match(/\d{1,2}:\d{2}\s*[AP]M/g);
+              const afterTimes = afterDash.match(/\d{1,2}:\d{2}\s*[AP]M/g);
+              
+              if (beforeTimes && beforeTimes.length > 0) {
+                departureTime = beforeTimes[beforeTimes.length - 1]; // Get the last time before dash
+              } else {
+                departureTime = timeMatches[0]; // Fallback
+              }
+              
+              if (afterTimes && afterTimes.length > 0) {
+                arrivalTime = afterTimes[0]; // Get the first time after dash
+              } else {
+                arrivalTime = timeMatches[1]; // Fallback
+              }
+            } else {
+              // If no dash pattern found, try to use flight duration to determine
+              // which times are departure vs arrival
+              const durationMatch = text.match(/\d+\s*hr\s*\d*\s*min|\d+\s*hr/);
+              if (durationMatch && timeMatches.length >= 2) {
+                // Check if times appear in pairs (e.g., "10:41 AM10:41 AM")
+                // This might indicate a repeated display of the same time
+                let uniqueTimes = [...new Set(timeMatches)];
+                
+                if (uniqueTimes.length >= 2) {
+                  // Use the first two unique times
+                  departureTime = uniqueTimes[0];
+                  arrivalTime = uniqueTimes[1];
+                } else {
+                  // Default to first two times
+                  departureTime = timeMatches[0];
+                  arrivalTime = timeMatches[1];
+                }
+              } else {
+                // Default fallback
+                departureTime = timeMatches[0];
+                arrivalTime = timeMatches[1];
+              }
+            }
+          } else if (timeMatches && timeMatches.length === 1) {
+            departureTime = timeMatches[0];
+          }
           
           // Extract airlines
           const airlines = ['Delta', 'American', 'United', 'Southwest', 'JetBlue', 'Spirit', 'Frontier', 'Alaska'];
@@ -344,17 +387,31 @@ async function searchFlights(from, to, departDate, returnDate) {
         console.log('-----------------------------------------------------');
       });
       
+      // Create JSON output
+      const jsonOutput = {
+        search: {
+          from: from,
+          to: to,
+          departDate: departDate,
+          returnDate: returnDate
+        },
+        flights: priceData.flights.map(flight => ({
+          airline: flight.airline,
+          departureTime: flight.departureTime,
+          arrivalTime: flight.arrivalTime,
+          duration: flight.duration,
+          price: flight.price
+        })),
+        timestamp: new Date().toISOString()
+      };
+      
+      // Output JSON to console
+      console.log('\nJSON Output:');
+      console.log(JSON.stringify(jsonOutput, null, 2));
+      
       return priceData.flights;
     } else {
       console.log('No flight data could be extracted from the page.');
-      
-      // Take another screenshot at this point
-      try {
-        await page.screenshot({ path: 'google-flights-final.png', fullPage: true });
-        console.log('Final screenshot saved');
-      } catch (e) {
-        console.log('Failed to take final screenshot:', e.message);
-      }
       
       // Last attempt - just grab any text from the main content area
       try {
