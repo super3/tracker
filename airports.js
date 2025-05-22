@@ -119,12 +119,12 @@ const airports = [
     { code: 'CMN', name: 'Mohammed V International Airport', city: 'Casablanca', lat: 33.3676, lng: -7.5900 },
     
     // South America
-    { code: 'GRU', name: 'São Paulo–Guarulhos International Airport', city: 'São Paulo', lat: -23.4356, lng: -46.4731 },
+    { code: 'GRU', name: 'São Paulo-Guarulhos International Airport', city: 'São Paulo', lat: -23.4356, lng: -46.4731 },
     { code: 'EZE', name: 'Ministro Pistarini International Airport', city: 'Buenos Aires', lat: -34.8222, lng: -58.5358 },
     { code: 'BOG', name: 'El Dorado International Airport', city: 'Bogotá', lat: 4.7016, lng: -74.1469 },
     { code: 'SCL', name: 'Santiago International Airport', city: 'Santiago', lat: -33.3930, lng: -70.7956 },
     { code: 'LIM', name: 'Jorge Chávez International Airport', city: 'Lima', lat: -12.0219, lng: -77.1143 },
-    { code: 'GIG', name: 'Rio de Janeiro–Galeão International Airport', city: 'Rio de Janeiro', lat: -22.8099, lng: -43.2506 }
+    { code: 'GIG', name: 'Rio de Janeiro-Galeão International Airport', city: 'Rio de Janeiro', lat: -22.8099, lng: -43.2506 }
 ];
 
 // Helper function to calculate distance between two points using Haversine formula
