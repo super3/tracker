@@ -33,17 +33,16 @@
                     <div class="text-xl font-semibold text-blue-600">Tracker</div>
                     <nav class="hidden md:flex space-x-6">
                         <a href="#" class="text-blue-600 border-b-2 border-blue-600 px-1 py-4">Flights</a>
-                        <a href="#" class="text-gray-600 px-1 py-4">Hotels</a>
                     </nav>
                 </div>
-                <div class="flex items-center space-x-4">
+                <!--<div class="flex items-center space-x-4">
                     <button class="text-gray-600">
                         <span class="material-symbols-outlined">language</span>
                     </button>
                     <button class="text-gray-600">
                         <span class="material-symbols-outlined">help</span>
                     </button>
-                </div>
+                </div>-->
             </div>
         </div>
     </header>
@@ -103,27 +102,7 @@
                 </div>
             </div>
             
-            <div x-data="searchForm()" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div class="border border-gray-300 rounded-lg p-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 grid-input">
-                    <label class="block text-sm text-gray-600 mb-1">Budget (per person)</label>
-                    <div class="flex items-center">
-                        <div class="relative w-full" x-data="{ open: false, selectedBudget: '$1,000' }">
-                            <button @click="open = !open" class="flex items-center justify-between w-full text-left">
-                                <span x-text="selectedBudget" class="text-lg outline-none">$1,000</span>
-                                <span class="material-symbols-outlined text-gray-500">arrow_drop_down</span>
-                            </button>
-                            <div x-show="open" @click.away="open = false" x-cloak class="absolute left-0 right-0 mt-2 bg-white rounded-md shadow-lg z-10">
-                                <div class="py-1">
-                                    <a href="#" @click.prevent="selectedBudget = '$1,000'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">$1,000</a>
-                                    <a href="#" @click.prevent="selectedBudget = '$2,000'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">$2,000</a>
-                                    <a href="#" @click.prevent="selectedBudget = '$3,000'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">$3,000</a>
-                                    <a href="#" @click.prevent="selectedBudget = '$5,000+'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">$5,000+</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
+            <div x-data="searchForm()" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 <div class="border border-gray-300 rounded-lg p-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 grid-input">
                     <label class="block text-sm text-gray-600 mb-1">From</label>
                     <div class="flex items-center relative" x-data="airportFrom()">
@@ -232,7 +211,7 @@
                     </div>
                 </div>
                 
-                <div class="flex items-center justify-center mb-4 col-span-1 md:col-span-2 lg:col-span-4">
+                <div class="flex items-center justify-center mt-2 mb-0 col-span-1 md:col-span-2 lg:col-span-3">
                     <button 
                         class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition flex items-center"
                         @click="validateSearch"
