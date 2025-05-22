@@ -199,9 +199,35 @@ async function searchFlights(from, to, departDate, returnDate) {
       console.log('URL did not change as expected, but continuing...');
     }
     
-    // Give extra time for results to fully render
+    // Give a significant wait time for results to fully render
     console.log('Giving extra time for results to render...');
-    await delay(5000);
+    await delay(10000);
+    
+    // Check for and close any popups or dialogs that might block results
+    console.log('Checking for popups or dialogs...');
+    try {
+      const popupSelectors = [
+        'button[aria-label="Close"]',
+        'button[aria-label="Close dialog"]',
+        'button[aria-label="No thanks"]',
+        '[role="dialog"] button',
+        'div.dialog-close',
+        'button:has-text("Close")',
+        'button:has-text("No thanks")'
+      ];
+      
+      for (const selector of popupSelectors) {
+        const popupButton = await page.$(selector);
+        if (popupButton) {
+          console.log(`Found popup/dialog with close button: ${selector}`);
+          await popupButton.click();
+          console.log('Clicked close button on popup/dialog');
+          await delay(1000);
+        }
+      }
+    } catch (popupError) {
+      console.log('Error handling popups:', popupError.message);
+    }
     
     // Try to take a screenshot of results
     try {
@@ -211,158 +237,146 @@ async function searchFlights(from, to, departDate, returnDate) {
       console.log('Failed to take screenshot of results:', screenshotError.message);
     }
     
-    // Try to extract flight information
-    console.log('Attempting to extract flight information...');
-    try {
-      const flights = await page.evaluate(() => {
-        // Try multiple selectors to find flight elements
-        const selectors = [
-          '[role="list"] > div',
-          '[role="listitem"]',
-          'div[role="region"] > div > div',
-          '[data-test-id*="flight"]',
-          'div[aria-label*="flight"]',
-          'div[jsname]', // Generic container elements
-          'div[role="main"] > div > div', // General main content area
-          'div[data-hveid]' // Google search result elements
-        ];
-        
-        let flightElements = [];
-        
-        // Try each selector until we find something
-        for (const selector of selectors) {
-          const elements = document.querySelectorAll(selector);
-          if (elements && elements.length > 0) {
-            flightElements = Array.from(elements);
-            console.log(`Found ${flightElements.length} elements with selector: ${selector}`);
-            break;
-          }
-        }
-        
-        // If we found elements, extract data from them
-        if (flightElements.length > 0) {
-          return flightElements.slice(0, 5).map(flightElement => {
-            // Extract price - try multiple possible selectors
-            let price = 'Price not found';
-            for (const priceSelector of [
-              '[aria-label*="dollars"]', 
-              '[aria-label*="price"]',
-              'div[aria-label*="$"]'
-            ]) {
-              const priceElement = flightElement.querySelector(priceSelector);
-              if (priceElement) {
-                price = priceElement.textContent.trim();
-                break;
-              }
-            }
-            
-            // Try to find price by looking for dollar sign in text content
-            if (price === 'Price not found') {
-              const allElements = flightElement.querySelectorAll('*');
-              for (const el of allElements) {
-                if (el.textContent && el.textContent.includes('$')) {
-                  price = el.textContent.trim();
-                  break;
-                }
-              }
-            }
-            
-            // Extract airline - try multiple possible selectors
-            let airline = 'Airline not found';
-            for (const airlineSelector of [
-              'div[aria-label*="operated by"]',
-              'div[aria-label*="airline"]',
-              'img[alt*="airline"]'
-            ]) {
-              const airlineElement = flightElement.querySelector(airlineSelector);
-              if (airlineElement) {
-                airline = airlineElement.textContent.trim() || airlineElement.alt;
-                break;
-              }
-            }
-            
-            // Extract times
-            const timeElements = flightElement.querySelectorAll('div[role="row"] span[role="text"], span[role="text"], div[role="text"]');
-            const times = Array.from(timeElements)
-              .map(el => el.textContent.trim())
-              .filter(text => text.match(/^[0-9]+:[0-9]+/) || text.match(/^[0-9]+(\:[0-9]+)?\s*(AM|PM)/i)); // Match time formats
-            
-            const departureTime = times[0] || 'Time not found';
-            const arrivalTime = times[1] || 'Time not found';
-            
-            // Extract duration
-            let duration = 'Duration not found';
-            for (const durationSelector of [
-              'div[aria-label*="Duration"]',
-              'div[aria-label*="hour"]'
-            ]) {
-              const durationElement = flightElement.querySelector(durationSelector);
-              if (durationElement) {
-                duration = durationElement.textContent.trim();
-                break;
-              }
-            }
-            
-            // Try to find duration by looking for "hr" in text content
-            if (duration === 'Duration not found') {
-              const allElements = flightElement.querySelectorAll('*');
-              for (const el of allElements) {
-                if (el.textContent && el.textContent.includes('hr')) {
-                  duration = el.textContent.trim();
-                  break;
-                }
-              }
-            }
-            
-            return {
-              airline,
-              departureTime,
-              arrivalTime,
-              duration,
-              price
-            };
-          });
-        } else {
-          // If no elements found, return an empty array
-          return [];
-        }
+    // Scroll down to ensure all content is loaded
+    console.log('Scrolling to load all content...');
+    await page.evaluate(() => {
+      window.scrollBy(0, 500);
+    });
+    await delay(2000);
+    
+    // Focus on main content
+    console.log('Focusing on main content...');
+    await page.evaluate(() => {
+      const mainContent = document.querySelector('div[role="main"]');
+      if (mainContent) {
+        mainContent.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+    await delay(2000);
+    
+    // Try an alternative approach - look specifically for prices
+    console.log('Looking for price elements directly...');
+    const priceData = await page.evaluate(() => {
+      // Find all elements containing price information
+      const priceElements = Array.from(document.querySelectorAll('*'))
+        .filter(el => {
+          const text = el.textContent || '';
+          return (text.includes('$') && 
+                  (text.includes('round trip') || text.includes('nonstop') || text.includes('hr'))) &&
+                  el.offsetParent !== null; // Ensure element is visible
+        });
+      
+      if (priceElements.length === 0) {
+        return { found: false, message: 'No price elements found' };
+      }
+      
+      // Filter out elements with loading text or page headers
+      const validElements = priceElements.filter(el => {
+        const text = el.textContent || '';
+        return !text.includes('Loading results') && 
+               !text.includes('Skip to main content') &&
+               !text.includes('Accessibility feedback');
       });
       
-      // Display the results
-      if (flights && flights.length > 0) {
-        console.log(`\nFound ${flights.length} round-trip flights from ${from} to ${to} (${departDate} - ${returnDate}):`);
+      console.log(`Found ${priceElements.length} price elements, ${validElements.length} after filtering`);
+      
+      // Categorize the elements to find flight cards
+      const flights = [];
+      const seenPrices = new Set(); // To avoid duplicates
+      
+      for (const el of validElements) {
+        const text = el.textContent.trim();
+        
+        // Only process elements that seem to contain complete flight information
+        if (text.length > 30) {
+          // Extract price
+          const priceMatch = text.match(/\$[\d,]+/);
+          const price = priceMatch ? priceMatch[0] : 'Price not found';
+          
+          // Extract duration
+          const durationMatch = text.match(/\d+\s*hr\s*\d*\s*min|\d+\s*hr/);
+          const duration = durationMatch ? durationMatch[0] : 'Duration not found';
+          
+          // Extract times
+          const timeMatches = text.match(/\d{1,2}:\d{2}\s*[AP]M/g);
+          const departureTime = timeMatches && timeMatches.length > 0 ? timeMatches[0] : 'Time not found';
+          const arrivalTime = timeMatches && timeMatches.length > 1 ? timeMatches[1] : 'Time not found';
+          
+          // Extract airlines
+          const airlines = ['Delta', 'American', 'United', 'Southwest', 'JetBlue', 'Spirit', 'Frontier', 'Alaska'];
+          let airline = 'Airline not found';
+          for (const a of airlines) {
+            if (text.includes(a)) {
+              airline = a;
+              break;
+            }
+          }
+          
+          // Skip if price is not found or this is a duplicate flight
+          const flightKey = `${price}-${airline}-${departureTime}-${arrivalTime}`;
+          if (price !== 'Price not found' && !seenPrices.has(flightKey)) {
+            seenPrices.add(flightKey);
+            flights.push({
+              price,
+              duration,
+              departureTime,
+              arrivalTime,
+              airline,
+              textSample: text.substring(0, 100)
+            });
+          }
+        }
+      }
+      
+      return { 
+        found: flights.length > 0,
+        flights: flights.slice(0, 5), // Limit to first 5 flights
+        message: `Found ${flights.length} unique flights with prices`
+      };
+    });
+    
+    console.log('Price data search result:', priceData.message);
+    
+    // If we found prices directly, display them
+    if (priceData.found) {
+      console.log(`\nFound ${priceData.flights.length} round-trip flights from ${from} to ${to} (${departDate} - ${returnDate}):`);
+      console.log('-----------------------------------------------------');
+      priceData.flights.forEach((flight, index) => {
+        console.log(`Flight ${index + 1}:`);
+        console.log(`  Airline: ${flight.airline}`);
+        console.log(`  Departure: ${flight.departureTime}`);
+        console.log(`  Arrival: ${flight.arrivalTime}`);
+        console.log(`  Duration: ${flight.duration}`);
+        console.log(`  Price: ${flight.price}`);
+        console.log(`  Text Sample: ${flight.textSample}`);
         console.log('-----------------------------------------------------');
-        flights.forEach((flight, index) => {
-          console.log(`Flight ${index + 1}:`);
-          console.log(`  Airline: ${flight.airline}`);
-          console.log(`  Departure: ${flight.departureTime}`);
-          console.log(`  Arrival: ${flight.arrivalTime}`);
-          console.log(`  Duration: ${flight.duration}`);
-          console.log(`  Price: ${flight.price}`);
-          console.log('-----------------------------------------------------');
+      });
+      
+      return priceData.flights;
+    } else {
+      console.log('No flight data could be extracted from the page.');
+      
+      // Take another screenshot at this point
+      try {
+        await page.screenshot({ path: 'google-flights-final.png', fullPage: true });
+        console.log('Final screenshot saved');
+      } catch (e) {
+        console.log('Failed to take final screenshot:', e.message);
+      }
+      
+      // Last attempt - just grab any text from the main content area
+      try {
+        const pageText = await page.evaluate(() => {
+          const mainContent = document.querySelector('div[role="main"]');
+          return mainContent ? mainContent.textContent : document.body.textContent;
         });
         
-        return flights;
-      } else {
-        console.log('No flight data could be extracted from the page.');
-        
-        // Last attempt - just grab any text from the main content area
-        try {
-          const pageText = await page.evaluate(() => {
-            const mainContent = document.querySelector('div[role="main"]');
-            return mainContent ? mainContent.textContent : document.body.textContent;
-          });
-          
-          console.log('Text content from main area:');
-          console.log(pageText.substring(0, 500) + '...');
-        } catch (e) {
-          console.log('Failed to extract page text content');
-        }
-        
-        return [];
+        console.log('Text content from main area:');
+        console.log(pageText.substring(0, 500) + '...');
+      } catch (e) {
+        console.log('Failed to extract page text content');
       }
-    } catch (extractError) {
-      console.error('Error extracting flight information:', extractError);
+      
       return [];
     }
   } catch (error) {
