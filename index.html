@@ -24,6 +24,14 @@
             border-color: rgb(239, 68, 68);
         }
     </style>
+    <script>
+        // Add a global store for sharing state between components
+        document.addEventListener('alpine:init', () => {
+            Alpine.store('app', {
+                dateType: 'exact'
+            });
+        });
+    </script>
 </head>
 <body class="bg-gray-100 font-sans min-h-screen flex flex-col">
     <header class="bg-white shadow-sm">
@@ -50,8 +58,19 @@
     <main class="container mx-auto px-4 py-6 flex-grow">
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
             <div class="flex flex-col md:flex-row justify-between mb-4">
-                <div class="flex space-x-4 mb-4 md:mb-0">
-                    <button class="bg-blue-600 text-white px-4 py-2 rounded-full">Flexible Dates</button>
+                <div class="flex space-x-4 mb-4 md:mb-0" x-data>
+                    <button 
+                        @click="$store.app.dateType = 'exact'" 
+                        :class="$store.app.dateType === 'exact' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'"
+                        class="px-4 py-2 rounded-full transition">
+                        Exact Dates
+                    </button>
+                    <button 
+                        @click="$store.app.dateType = 'flexible'" 
+                        :class="$store.app.dateType === 'flexible' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'"
+                        class="px-4 py-2 rounded-full transition">
+                        Flexible Dates
+                    </button>
                 </div>
                 <div class="flex space-x-4 items-center">
                     <div class="relative" x-data="{ open: false, passengerCount: 1 }">
@@ -163,46 +182,62 @@
                     <label class="block text-sm text-gray-600 mb-1">Dates</label>
                     <div class="flex items-center">
                         <span class="material-symbols-outlined text-gray-500 mr-2">calendar_month</span>
-                        <div class="relative w-full" x-data="{ open: false, selectedDuration: '4 days in June' }">
-                            <button @click="open = !open" class="flex items-center justify-between w-full text-left">
-                                <span x-text="selectedDuration" class="text-lg outline-none">4 days in June</span>
-                                <span class="material-symbols-outlined text-gray-500">arrow_drop_down</span>
-                            </button>
-                            <div x-show="open" @click.away="open = false" x-cloak class="absolute left-0 right-0 mt-2 bg-white rounded-md shadow-lg z-10">
-                                <div class="p-3">
-                                    <div class="mb-4 pb-3 border-b border-gray-200">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <span class="text-sm font-medium text-gray-700">Days</span>
-                                            <div class="flex items-center space-x-3">
-                                                <button @click="selectedDuration = selectedDuration.replace(/^\d+/, Math.max(2, parseInt(selectedDuration.match(/^\d+/)[0]) - 1))" 
-                                                        class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center" 
-                                                        :class="parseInt(selectedDuration.match(/^\d+/)[0]) <= 2 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'">
-                                                    <span class="material-symbols-outlined text-sm">remove</span>
-                                                </button>
-                                                <span x-text="selectedDuration.match(/^\d+/)[0]" class="min-w-[20px] text-center">4</span>
-                                                <button @click="selectedDuration = selectedDuration.replace(/^\d+/, Math.min(60, parseInt(selectedDuration.match(/^\d+/)[0]) + 1))" 
-                                                        class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center"
-                                                        :class="parseInt(selectedDuration.match(/^\d+/)[0]) >= 60 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'">
-                                                    <span class="material-symbols-outlined text-sm">add</span>
-                                                </button>
+                        
+                        <!-- Date selector based on dateType -->
+                        <div class="relative w-full" x-data="{ open: false, selectedDuration: '4 days in June', 
+                                                               departDate: '2025-06-22', returnDate: '2025-06-26' }">
+                            
+                            <!-- Exact Dates Option -->
+                            <div x-show="$store.app.dateType === 'exact'">
+                                <div class="flex items-center justify-between w-full text-left">
+                                    <input type="text" x-model="departDate" placeholder="Departure" class="w-24 mr-2 text-lg outline-none" />
+                                    <span class="text-gray-500 mx-2">to</span>
+                                    <input type="text" x-model="returnDate" placeholder="Return" class="w-24 ml-2 text-lg outline-none" />
+                                </div>
+                            </div>
+                            
+                            <!-- Flexible Dates Option -->
+                            <div x-show="$store.app.dateType === 'flexible'">
+                                <button @click="open = !open" class="flex items-center justify-between w-full text-left">
+                                    <span x-text="selectedDuration" class="text-lg outline-none">4 days in June</span>
+                                    <span class="material-symbols-outlined text-gray-500">arrow_drop_down</span>
+                                </button>
+                                <div x-show="open" @click.away="open = false" x-cloak class="absolute left-0 right-0 mt-2 bg-white rounded-md shadow-lg z-10">
+                                    <div class="p-3">
+                                        <div class="mb-4 pb-3 border-b border-gray-200">
+                                            <div class="flex items-center justify-between mb-2">
+                                                <span class="text-sm font-medium text-gray-700">Days</span>
+                                                <div class="flex items-center space-x-3">
+                                                    <button @click="selectedDuration = selectedDuration.replace(/^\d+/, Math.max(2, parseInt(selectedDuration.match(/^\d+/)[0]) - 1))" 
+                                                            class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center" 
+                                                            :class="parseInt(selectedDuration.match(/^\d+/)[0]) <= 2 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'">
+                                                        <span class="material-symbols-outlined text-sm">remove</span>
+                                                    </button>
+                                                    <span x-text="selectedDuration.match(/^\d+/)[0]" class="min-w-[20px] text-center">4</span>
+                                                    <button @click="selectedDuration = selectedDuration.replace(/^\d+/, Math.min(60, parseInt(selectedDuration.match(/^\d+/)[0]) + 1))" 
+                                                            class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center"
+                                                            :class="parseInt(selectedDuration.match(/^\d+/)[0]) >= 60 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'">
+                                                        <span class="material-symbols-outlined text-sm">add</span>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Month</label>
-                                        <div class="grid grid-cols-4 gap-2">
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in January'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Jan</button>
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in February'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Feb</button>
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in March'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Mar</button>
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in April'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Apr</button>
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in May'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">May</button>
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in June'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100" :class="selectedDuration.includes('June') ? 'bg-blue-50 border-blue-200' : ''">Jun</button>
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in July'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Jul</button>
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in August'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Aug</button>
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in September'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Sep</button>
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in October'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Oct</button>
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in November'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Nov</button>
-                                            <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in December'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Dec</button>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Month</label>
+                                            <div class="grid grid-cols-4 gap-2">
+                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in January'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Jan</button>
+                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in February'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Feb</button>
+                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in March'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Mar</button>
+                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in April'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Apr</button>
+                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in May'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">May</button>
+                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in June'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100" :class="selectedDuration.includes('June') ? 'bg-blue-50 border-blue-200' : ''">Jun</button>
+                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in July'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Jul</button>
+                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in August'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Aug</button>
+                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in September'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Sep</button>
+                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in October'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Oct</button>
+                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in November'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Nov</button>
+                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in December'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Dec</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -223,8 +258,8 @@
             </div>
         </div>
         
-        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 class="text-xl font-semibold mb-4">Best departing flights</h2>
+        <div id="results-section" class="bg-white rounded-lg shadow-md p-6 mb-6" x-show="resultsVisible" x-data="{ resultsVisible: false }" x-cloak>
+            <h2 id="results-title" class="text-xl font-semibold mb-4">Best flights</h2>
             
             <div class="mb-6 flex items-center justify-between text-sm text-gray-600 border-b pb-4">
                 <div>Sort by: <span class="font-semibold">Price</span></div>
@@ -240,106 +275,8 @@
                 </div>
             </div>
             
-            <!-- Flight card -->
-            <div class="border border-gray-200 rounded-lg p-4 mb-4 hover:shadow-md transition">
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4">
-                    <div class="flex items-center mb-2 md:mb-0">
-                        <div class="bg-gray-200 rounded-full h-10 w-10 flex items-center justify-center mr-3">
-                            <span class="material-symbols-outlined">flight</span>
-                        </div>
-                        <div>
-                            <div class="font-semibold">United Airlines</div>
-                            <div class="text-sm text-gray-600">UA 1234</div>
-                        </div>
-                    </div>
-                    
-                    <div class="flex flex-col md:flex-row items-start md:items-center md:space-x-8">
-                        <div class="text-center md:text-left mb-2 md:mb-0">
-                            <div class="text-lg font-semibold">8:30 AM</div>
-                            <div class="text-sm text-gray-600">SFO</div>
-                        </div>
-                        
-                        <div class="text-center flex flex-col items-center mb-2 md:mb-0">
-                            <div class="text-sm text-gray-600">5h 30m</div>
-                            <div class="relative w-24 h-1 bg-gray-300">
-                                <div class="absolute w-2 h-2 bg-gray-400 rounded-full -top-0.5 left-0"></div>
-                                <div class="absolute w-2 h-2 bg-gray-400 rounded-full -top-0.5 right-0"></div>
-                            </div>
-                            <div class="text-sm text-gray-600">Nonstop</div>
-                        </div>
-                        
-                        <div class="text-center md:text-right">
-                            <div class="text-lg font-semibold">2:00 PM</div>
-                            <div class="text-sm text-gray-600">JFK</div>
-                        </div>
-                    </div>
-                    
-                    <div class="text-right mt-3 md:mt-0">
-                        <div class="text-2xl font-semibold">$349</div>
-                        <div class="text-sm text-gray-600">Round trip</div>
-                    </div>
-                </div>
-                
-                <div class="text-sm text-gray-600 border-t pt-3">
-                    <div class="flex items-center">
-                        <span class="material-symbols-outlined text-green-600 mr-2">eco</span>
-                        <span>Emissions: -15% compared to avg</span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Another flight card -->
-            <div class="border border-gray-200 rounded-lg p-4 mb-4 hover:shadow-md transition">
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4">
-                    <div class="flex items-center mb-2 md:mb-0">
-                        <div class="bg-gray-200 rounded-full h-10 w-10 flex items-center justify-center mr-3">
-                            <span class="material-symbols-outlined">flight</span>
-                        </div>
-                        <div>
-                            <div class="font-semibold">Delta Airlines</div>
-                            <div class="text-sm text-gray-600">DL 3842</div>
-                        </div>
-                    </div>
-                    
-                    <div class="flex flex-col md:flex-row items-start md:items-center md:space-x-8">
-                        <div class="text-center md:text-left mb-2 md:mb-0">
-                            <div class="text-lg font-semibold">10:15 AM</div>
-                            <div class="text-sm text-gray-600">SFO</div>
-                        </div>
-                        
-                        <div class="text-center flex flex-col items-center mb-2 md:mb-0">
-                            <div class="text-sm text-gray-600">6h 10m</div>
-                            <div class="relative w-24 h-1 bg-gray-300">
-                                <div class="absolute w-2 h-2 bg-gray-400 rounded-full -top-0.5 left-0"></div>
-                                <div class="absolute w-2 h-2 bg-gray-400 rounded-full -top-0.5 right-0"></div>
-                            </div>
-                            <div class="text-sm text-gray-600">1 stop (2h in ORD)</div>
-                        </div>
-                        
-                        <div class="text-center md:text-right">
-                            <div class="text-lg font-semibold">4:25 PM</div>
-                            <div class="text-sm text-gray-600">JFK</div>
-                        </div>
-                    </div>
-                    
-                    <div class="text-right mt-3 md:mt-0">
-                        <div class="text-2xl font-semibold">$315</div>
-                        <div class="text-sm text-gray-600">Round trip</div>
-                    </div>
-                </div>
-                
-                <div class="text-sm text-gray-600 border-t pt-3">
-                    <div class="flex items-center">
-                        <span class="material-symbols-outlined text-blue-600 mr-2">verified</span>
-                        <span>Best legroom in coach</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="text-center">
-                <button class="text-blue-600 font-semibold py-2 px-4 hover:bg-blue-50 rounded-lg transition">
-                    Show more results
-                </button>
+            <div id="flights-container">
+                <!-- Flight results will be inserted here dynamically -->
             </div>
         </div>
     </main>
@@ -354,5 +291,286 @@
             </div>
         </div>
     </footer>
+
+    <script>
+        // Function to format flight data for display
+        function formatFlightResults(flights) {
+            return flights.map((flight, index) => {
+                return `
+                <div class="border border-gray-200 rounded-lg p-4 mb-4 hover:shadow-md transition">
+                    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4">
+                        <div class="flex items-center mb-2 md:mb-0">
+                            <div class="bg-gray-200 rounded-full h-10 w-10 flex items-center justify-center mr-3">
+                                <span class="material-symbols-outlined">flight</span>
+                            </div>
+                            <div>
+                                <div class="font-semibold">${flight.airline}</div>
+                                <div class="text-sm text-gray-600">Flight ${index + 1}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-col md:flex-row items-start md:items-center md:space-x-8">
+                            <div class="text-center md:text-left mb-2 md:mb-0">
+                                <div class="text-lg font-semibold">${flight.departureTime}</div>
+                                <div class="text-sm text-gray-600">ATL</div>
+                            </div>
+                            
+                            <div class="text-center flex flex-col items-center mb-2 md:mb-0">
+                                <div class="text-sm text-gray-600">${flight.duration}</div>
+                                <div class="relative w-24 h-1 bg-gray-300">
+                                    <div class="absolute w-2 h-2 bg-gray-400 rounded-full -top-0.5 left-0"></div>
+                                    <div class="absolute w-2 h-2 bg-gray-400 rounded-full -top-0.5 right-0"></div>
+                                </div>
+                                <div class="text-sm text-gray-600">Nonstop</div>
+                            </div>
+                            
+                            <div class="text-center md:text-right">
+                                <div class="text-lg font-semibold">${flight.arrivalTime}</div>
+                                <div class="text-sm text-gray-600">NYC</div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-right mt-3 md:mt-0">
+                            <div class="text-2xl font-semibold">${flight.price}</div>
+                            <div class="text-sm text-gray-600">Round trip</div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // Create a searchForm component for Alpine.js
+        function searchForm() {
+            return {
+                fromCity: "Atlanta",
+                toCity: "New York",
+                departDate: "2025-06-22",
+                returnDate: "2025-06-25",
+                loading: false,
+                flights: [],
+                resultsVisible: false,
+                error: null,
+                toFieldError: false,
+                
+                validateSearch() {
+                    // Reset error state
+                    this.toFieldError = false;
+                    this.error = null;
+                    
+                    // Simple validation
+                    if (!this.toCity) {
+                        this.toFieldError = true;
+                        this.$refs.toField.classList.add('flash-border');
+                        setTimeout(() => {
+                            this.$refs.toField.classList.remove('flash-border');
+                        }, 1000);
+                        return;
+                    }
+                    
+                    // Search for flights
+                    this.searchFlights();
+                },
+                
+                searchFlights() {
+                    this.loading = true;
+                    this.resultsVisible = true;
+                    
+                    // Get date values based on the selected date type
+                    const dateType = Alpine.store('app').dateType;
+                    
+                    let departDate, returnDate, isFlexible;
+                    
+                    if (dateType === 'exact') {
+                        // Find the date inputs container
+                        const dateInputs = document.querySelectorAll('input[placeholder="Departure"], input[placeholder="Return"]');
+                        if (dateInputs.length >= 2) {
+                            departDate = dateInputs[0].value || this.departDate;
+                            returnDate = dateInputs[1].value || this.returnDate;
+                        } else {
+                            departDate = this.departDate;
+                            returnDate = this.returnDate;
+                        }
+                        isFlexible = false;
+                    } else {
+                        // For flexible dates, use the displayed text
+                        const flexDateElement = document.querySelector('button span.text-lg');
+                        const flexDateText = flexDateElement ? flexDateElement.textContent : '4 days in June';
+                        
+                        // Still use the default dates for the API call, but include flexible flag
+                        departDate = this.departDate;
+                        returnDate = this.returnDate;
+                        isFlexible = true;
+                    }
+                    
+                    // Update results section title
+                    document.getElementById('results-title').textContent = 
+                        `Best flights from ${this.fromCity} to ${this.toCity}`;
+                    
+                    // Show loading state
+                    document.getElementById('flights-container').innerHTML = `
+                        <div class="flex justify-center items-center py-10">
+                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                        </div>
+                        <div class="text-center text-gray-600">Searching for the best flights...</div>
+                        <div class="text-center text-gray-500 mt-2 text-sm">This may take a minute - we're searching for the best prices</div>
+                    `;
+                    
+                    // Scroll to results
+                    document.getElementById('results-section').scrollIntoView({ behavior: 'smooth' });
+                    
+                    // For development testing, just simulate a response
+                    setTimeout(() => {
+                        this.loading = false;
+                        this.flights = [
+                            {
+                                airline: "Southwest",
+                                departureTime: "1:30 PM",
+                                arrivalTime: "10:55 PM", 
+                                duration: "9 hr 25 min",
+                                price: "$138"
+                            },
+                            {
+                                airline: "Delta",
+                                departureTime: "8:30 AM",
+                                arrivalTime: "10:45 AM",
+                                duration: "2 hr 15 min",
+                                price: "$283"
+                            },
+                            {
+                                airline: "United",
+                                departureTime: "10:41 AM",
+                                arrivalTime: "12:53 PM",
+                                duration: "2 hr 12 min",
+                                price: "$120"
+                            }
+                        ];
+                        document.getElementById('flights-container').innerHTML = formatFlightResults(this.flights);
+                    }, 2000);
+                    
+                    // Comment this out and use the code below when you have a backend
+                    /* 
+                    // Make the API call to our backend
+                    fetch('/api/search-flights', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            from: this.fromCity,
+                            to: this.toCity,
+                            departDate: departDate,
+                            returnDate: returnDate,
+                            isFlexible: isFlexible
+                        })
+                    })
+                    .then(response => {
+                        // Always parse the JSON, even if the status is not OK
+                        return response.json().then(data => {
+                            // Add the status to the parsed data
+                            return { ...data, status: response.status };
+                        });
+                    })
+                    .then(data => {
+                        this.loading = false;
+                        
+                        // Check if there's an error message in the response
+                        if (data.error) {
+                            // Show the error message, but still display flights if provided
+                            const errorHtml = `
+                                <div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800">
+                                    ${data.error}
+                                </div>
+                            `;
+                            
+                            // If we have flights, display them despite the error
+                            if (data.flights && data.flights.length > 0) {
+                                this.flights = data.flights;
+                                document.getElementById('flights-container').innerHTML = 
+                                    errorHtml + formatFlightResults(this.flights);
+                            } else {
+                                document.getElementById('flights-container').innerHTML = errorHtml + 
+                                    '<div class="text-center py-10 text-gray-600">No flights found. Try different dates or destinations.</div>';
+                            }
+                            return;
+                        }
+                        
+                        // No error, process the flights normally
+                        this.flights = data.flights || [];
+                        
+                        if (this.flights.length > 0) {
+                            document.getElementById('flights-container').innerHTML = formatFlightResults(this.flights);
+                        } else {
+                            document.getElementById('flights-container').innerHTML = 
+                                '<div class="text-center py-10 text-gray-600">No flights found. Try different dates or destinations.</div>';
+                        }
+                    })
+                    .catch(error => {
+                        this.loading = false;
+                        console.error('Error fetching flights:', error);
+                        this.error = 'Failed to search flights. Please try again later.';
+                        document.getElementById('flights-container').innerHTML = `
+                            <div class="text-center py-10 text-red-600">
+                                ${this.error}
+                            </div>
+                        `;
+                    });
+                    */
+                }
+            };
+        }
+
+        // Create airport selection components for from/to fields
+        function airportFrom() {
+            return {
+                search: "Atlanta",
+                selected: null,
+                showDropdown: false,
+                airports: window.airports || [],
+                
+                filteredAirports() {
+                    if (!this.search || this.search.length < 2) return [];
+                    const searchLower = this.search.toLowerCase();
+                    return this.airports.filter(airport => 
+                        airport.city.toLowerCase().includes(searchLower) ||
+                        airport.code.toLowerCase().includes(searchLower) ||
+                        airport.name.toLowerCase().includes(searchLower)
+                    ).slice(0, 5);
+                },
+                
+                selectAirport(airport) {
+                    this.selected = airport;
+                    this.search = airport.city + ' (' + airport.code + ')';
+                    this.showDropdown = false;
+                    this.$dispatch('airport-from-selected', airport);
+                }
+            };
+        }
+        
+        function airportTo() {
+            return {
+                search: "New York",
+                selected: null,
+                showDropdown: false,
+                airports: window.airports || [],
+                
+                filteredAirports() {
+                    if (!this.search || this.search.length < 2) return [];
+                    const searchLower = this.search.toLowerCase();
+                    return this.airports.filter(airport => 
+                        airport.city.toLowerCase().includes(searchLower) ||
+                        airport.code.toLowerCase().includes(searchLower) ||
+                        airport.name.toLowerCase().includes(searchLower)
+                    ).slice(0, 5);
+                },
+                
+                selectAirport(airport) {
+                    this.selected = airport;
+                    this.search = airport.city + ' (' + airport.code + ')';
+                    this.showDropdown = false;
+                    this.$dispatch('airport-to-selected', airport);
+                }
+            };
+        }
+    </script>
 </body>
 </html> 
