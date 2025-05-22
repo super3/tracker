@@ -10,12 +10,16 @@ async function searchFlights(from, to, departDate, returnDate) {
   // Launch the browser
   const browser = await puppeteer.launch({
     headless: false, // Set to false to see the browser in action
-    defaultViewport: { width: 1200, height: 800 }
+    defaultViewport: { width: 1200, height: 800 },
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-accelerated-2d-canvas', '--disable-gpu']
   });
   
   try {
     // Open a new page
     const page = await browser.newPage();
+    
+    // Set longer default timeout
+    page.setDefaultTimeout(60000);
     
     // Navigate to Google Flights
     console.log('Navigating to Google Flights...');
@@ -25,7 +29,7 @@ async function searchFlights(from, to, departDate, returnDate) {
     });
     
     // Wait for the page to load
-    await page.waitForSelector('div[role="main"]', { timeout: 10000 });
+    await page.waitForSelector('div[role="main"]', { timeout: 30000 });
     console.log('Page loaded successfully');
 
     // Make sure we're in round-trip mode (it's usually the default)
@@ -83,82 +87,290 @@ async function searchFlights(from, to, departDate, returnDate) {
     console.log('Setting return date...');
     await enterDate(page, 'Return', returnDate);
     
+    // Take a screenshot before search
+    try {
+      await page.screenshot({ path: 'google-flights-before-search.png' });
+      console.log('Screenshot saved before search');
+    } catch (e) {
+      console.log('Failed to take screenshot before search:', e.message);
+    }
+    
     // Click the search button
     console.log('Executing search...');
-    const searchButton = 'button[aria-label="Search"]';
-    await page.waitForSelector(searchButton, { timeout: 10000 });
-    await page.click(searchButton);
+    const searchButtonSelectors = [
+      'button[aria-label="Search"]',
+      'button[data-test-id="search-button"]',
+      'button[data-test-id="submit-button"]',
+      'button[aria-label*="search"]',
+      'button.gws-flights__search-button',
+      'button.gws-flights-form__search-button',
+      'button:has-text("Search")'
+    ];
+    
+    let searchClicked = false;
+    for (const selector of searchButtonSelectors) {
+      try {
+        const buttonExists = await page.$(selector);
+        if (buttonExists) {
+          await page.click(selector);
+          console.log(`Clicked search button with selector: ${selector}`);
+          searchClicked = true;
+          break;
+        }
+      } catch (e) {
+        continue;
+      }
+    }
+    
+    if (!searchClicked) {
+      console.log('Could not find search button with predefined selectors');
+      console.log('Trying to find any button that looks like a search button...');
+      
+      // Try a more generic approach
+      await page.evaluate(() => {
+        // Find all buttons
+        const buttons = Array.from(document.querySelectorAll('button'));
+        
+        // Look for search-like buttons
+        for (const button of buttons) {
+          const text = button.textContent.toLowerCase();
+          const ariaLabel = (button.getAttribute('aria-label') || '').toLowerCase();
+          
+          if (text.includes('search') || ariaLabel.includes('search') || 
+              text.includes('find') || ariaLabel.includes('find') ||
+              text.includes('go') || ariaLabel.includes('go')) {
+            button.click();
+            return true;
+          }
+        }
+        
+        // If no obvious search button, try clicking the last button on the form
+        const lastButton = buttons[buttons.length - 1];
+        if (lastButton) {
+          lastButton.click();
+          return true;
+        }
+        
+        return false;
+      });
+    }
     
     // Wait for results to load
     console.log('Waiting for search results...');
-    await page.waitForSelector('[role="list"] > div', { 
-      timeout: 30000 
-    });
     
-    // Give extra time for results to fully load
-    await delay(3000);
-    
-    // Extract flight information
-    console.log('Extracting flight information...');
-    const flights = await page.evaluate(() => {
-      const flightElements = document.querySelectorAll('[role="list"] > div');
+    // First wait for a loading indicator if it appears
+    try {
+      const loadingSelectors = [
+        '[role="progressbar"]', 
+        '[aria-label*="Loading"]',
+        '[aria-busy="true"]',
+        '.loading-animation',
+        '.progress-bar'
+      ];
       
-      return Array.from(flightElements).slice(0, 5).map(flightElement => {
-        // Extract price
-        const priceElement = flightElement.querySelector('[aria-label*="dollars"]');
-        const price = priceElement ? priceElement.textContent.trim() : 'Price not found';
+      for (const selector of loadingSelectors) {
+        const loadingElement = await page.$(selector);
+        if (loadingElement) {
+          console.log(`Found loading indicator with selector: ${selector}`);
+          await page.waitForFunction(
+            (sel) => !document.querySelector(sel) || document.querySelector(sel).getAttribute('aria-hidden') === 'true', 
+            { timeout: 60000 },
+            selector
+          );
+          console.log('Loading indicator disappeared');
+          break;
+        }
+      }
+    } catch (loadingError) {
+      console.log('No loading indicator detected or it disappeared quickly');
+    }
+    
+    // Wait for URL to change to results page
+    try {
+      console.log('Waiting for URL to change to results page...');
+      await page.waitForFunction(
+        () => window.location.href.includes('flights/search') || 
+              window.location.href.includes('flights/results') || 
+              window.location.href.includes('flights?'), 
+        { timeout: 30000 }
+      );
+      console.log('URL changed to results page');
+    } catch (urlChangeError) {
+      console.log('URL did not change as expected, but continuing...');
+    }
+    
+    // Give extra time for results to fully render
+    console.log('Giving extra time for results to render...');
+    await delay(5000);
+    
+    // Try to take a screenshot of results
+    try {
+      await page.screenshot({ path: 'google-flights-results.png', fullPage: true });
+      console.log('Screenshot saved of results page');
+    } catch (screenshotError) {
+      console.log('Failed to take screenshot of results:', screenshotError.message);
+    }
+    
+    // Try to extract flight information
+    console.log('Attempting to extract flight information...');
+    try {
+      const flights = await page.evaluate(() => {
+        // Try multiple selectors to find flight elements
+        const selectors = [
+          '[role="list"] > div',
+          '[role="listitem"]',
+          'div[role="region"] > div > div',
+          '[data-test-id*="flight"]',
+          'div[aria-label*="flight"]',
+          'div[jsname]', // Generic container elements
+          'div[role="main"] > div > div', // General main content area
+          'div[data-hveid]' // Google search result elements
+        ];
         
-        // Extract airline
-        const airlineElement = flightElement.querySelector('div[aria-label*="operated by"]');
-        const airline = airlineElement ? airlineElement.textContent.trim() : 'Airline not found';
+        let flightElements = [];
         
-        // Extract departure and arrival times
-        const timeElements = flightElement.querySelectorAll('div[role="row"] span[role="text"]');
-        const times = Array.from(timeElements)
-          .map(el => el.textContent.trim())
-          .filter(text => text.match(/^[0-9]+:[0-9]+/)); // Filter for time format like "9:30 AM"
+        // Try each selector until we find something
+        for (const selector of selectors) {
+          const elements = document.querySelectorAll(selector);
+          if (elements && elements.length > 0) {
+            flightElements = Array.from(elements);
+            console.log(`Found ${flightElements.length} elements with selector: ${selector}`);
+            break;
+          }
+        }
         
-        const departureTime = times[0] || 'Time not found';
-        const arrivalTime = times[1] || 'Time not found';
-        
-        // Extract duration
-        const durationElement = flightElement.querySelector('div[aria-label*="Duration"]');
-        const duration = durationElement ? durationElement.textContent.trim() : 'Duration not found';
-        
-        return {
-          airline,
-          departureTime,
-          arrivalTime,
-          duration,
-          price
-        };
+        // If we found elements, extract data from them
+        if (flightElements.length > 0) {
+          return flightElements.slice(0, 5).map(flightElement => {
+            // Extract price - try multiple possible selectors
+            let price = 'Price not found';
+            for (const priceSelector of [
+              '[aria-label*="dollars"]', 
+              '[aria-label*="price"]',
+              'div[aria-label*="$"]'
+            ]) {
+              const priceElement = flightElement.querySelector(priceSelector);
+              if (priceElement) {
+                price = priceElement.textContent.trim();
+                break;
+              }
+            }
+            
+            // Try to find price by looking for dollar sign in text content
+            if (price === 'Price not found') {
+              const allElements = flightElement.querySelectorAll('*');
+              for (const el of allElements) {
+                if (el.textContent && el.textContent.includes('$')) {
+                  price = el.textContent.trim();
+                  break;
+                }
+              }
+            }
+            
+            // Extract airline - try multiple possible selectors
+            let airline = 'Airline not found';
+            for (const airlineSelector of [
+              'div[aria-label*="operated by"]',
+              'div[aria-label*="airline"]',
+              'img[alt*="airline"]'
+            ]) {
+              const airlineElement = flightElement.querySelector(airlineSelector);
+              if (airlineElement) {
+                airline = airlineElement.textContent.trim() || airlineElement.alt;
+                break;
+              }
+            }
+            
+            // Extract times
+            const timeElements = flightElement.querySelectorAll('div[role="row"] span[role="text"], span[role="text"], div[role="text"]');
+            const times = Array.from(timeElements)
+              .map(el => el.textContent.trim())
+              .filter(text => text.match(/^[0-9]+:[0-9]+/) || text.match(/^[0-9]+(\:[0-9]+)?\s*(AM|PM)/i)); // Match time formats
+            
+            const departureTime = times[0] || 'Time not found';
+            const arrivalTime = times[1] || 'Time not found';
+            
+            // Extract duration
+            let duration = 'Duration not found';
+            for (const durationSelector of [
+              'div[aria-label*="Duration"]',
+              'div[aria-label*="hour"]'
+            ]) {
+              const durationElement = flightElement.querySelector(durationSelector);
+              if (durationElement) {
+                duration = durationElement.textContent.trim();
+                break;
+              }
+            }
+            
+            // Try to find duration by looking for "hr" in text content
+            if (duration === 'Duration not found') {
+              const allElements = flightElement.querySelectorAll('*');
+              for (const el of allElements) {
+                if (el.textContent && el.textContent.includes('hr')) {
+                  duration = el.textContent.trim();
+                  break;
+                }
+              }
+            }
+            
+            return {
+              airline,
+              departureTime,
+              arrivalTime,
+              duration,
+              price
+            };
+          });
+        } else {
+          // If no elements found, return an empty array
+          return [];
+        }
       });
-    });
-    
-    // Display the results
-    console.log(`\nFound ${flights.length} round-trip flights from ${from} to ${to} (${departDate} - ${returnDate}):`);
-    console.log('-----------------------------------------------------');
-    flights.forEach((flight, index) => {
-      console.log(`Flight ${index + 1}:`);
-      console.log(`  Airline: ${flight.airline}`);
-      console.log(`  Departure: ${flight.departureTime}`);
-      console.log(`  Arrival: ${flight.arrivalTime}`);
-      console.log(`  Duration: ${flight.duration}`);
-      console.log(`  Price: ${flight.price}`);
-      console.log('-----------------------------------------------------');
-    });
-    
-    // Take a screenshot
-    await page.screenshot({ path: 'google-flights-results.png' });
-    console.log('Screenshot saved as google-flights-results.png');
-    
-    return flights;
+      
+      // Display the results
+      if (flights && flights.length > 0) {
+        console.log(`\nFound ${flights.length} round-trip flights from ${from} to ${to} (${departDate} - ${returnDate}):`);
+        console.log('-----------------------------------------------------');
+        flights.forEach((flight, index) => {
+          console.log(`Flight ${index + 1}:`);
+          console.log(`  Airline: ${flight.airline}`);
+          console.log(`  Departure: ${flight.departureTime}`);
+          console.log(`  Arrival: ${flight.arrivalTime}`);
+          console.log(`  Duration: ${flight.duration}`);
+          console.log(`  Price: ${flight.price}`);
+          console.log('-----------------------------------------------------');
+        });
+        
+        return flights;
+      } else {
+        console.log('No flight data could be extracted from the page.');
+        
+        // Last attempt - just grab any text from the main content area
+        try {
+          const pageText = await page.evaluate(() => {
+            const mainContent = document.querySelector('div[role="main"]');
+            return mainContent ? mainContent.textContent : document.body.textContent;
+          });
+          
+          console.log('Text content from main area:');
+          console.log(pageText.substring(0, 500) + '...');
+        } catch (e) {
+          console.log('Failed to extract page text content');
+        }
+        
+        return [];
+      }
+    } catch (extractError) {
+      console.error('Error extracting flight information:', extractError);
+      return [];
+    }
   } catch (error) {
     console.error('An error occurred:', error);
   } finally {
     // Keep the browser open for 10 seconds to see the results
-    console.log('Keeping browser open for 10 seconds so you can see the results...');
-    await delay(10000);
+    console.log('Keeping browser open for 30 seconds so you can see the results...');
+    await delay(30000);
     
     // Close the browser
     await browser.close();
@@ -168,86 +380,228 @@ async function searchFlights(from, to, departDate, returnDate) {
 
 // Helper function to enter dates
 async function enterDate(page, fieldName, date) {
-  // Click on the date field to open the calendar
-  await page.waitForSelector(`input[placeholder="${fieldName}"]`, { timeout: 10000 });
-  await page.click(`input[placeholder="${fieldName}"]`);
+  console.log(`Setting ${fieldName} date to ${date}...`);
   
-  // Alternative approach for date selection that's more robust
-  console.log(`Using direct date input approach for ${fieldName}...`);
-  try {
-    // Clear any existing input in the date field
-    await page.evaluate((field) => {
-      const dateInputs = Array.from(document.querySelectorAll(`input[placeholder="${field}"]`));
-      if (dateInputs.length > 0) {
-        dateInputs[0].value = '';
-      }
-    }, fieldName);
-
-    // Type the date directly in a format like "June 22, 2025"
-    const [year, month, day] = date.split('-').map(num => parseInt(num, 10));
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
-                        'July', 'August', 'September', 'October', 'November', 'December'];
-    const formattedDate = `${monthNames[month-1]} ${day}, ${year}`;
-    console.log(`Entering date: ${formattedDate}`);
-    
-    await page.type(`input[placeholder="${fieldName}"]`, formattedDate, { delay: 100 });
-    await page.keyboard.press('Enter');
-    
-    // Wait a moment for the date to be accepted
-    await delay(1000);
-    
-    // Move focus away from date field to confirm
-    await page.keyboard.press('Tab');
-    
-    console.log(`${fieldName} date entered successfully`);
-  } catch (dateError) {
-    console.error(`Error during direct date input for ${fieldName}:`, dateError);
-    console.log(`Trying fallback date selection method for ${fieldName}...`);
-    
+  // Parse the target date
+  const [year, month, day] = date.split('-').map(num => parseInt(num, 10));
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                      'July', 'August', 'September', 'October', 'November', 'December'];
+  const targetMonth = monthNames[month-1];
+  
+  // Multiple approaches to date entry, trying them in sequence until one works
+  let dateEntered = false;
+  
+  // APPROACH 1: Direct text input with MM/DD/YYYY format
+  if (!dateEntered) {
     try {
-      // Try clicking on any visible date in the calendar and then using keyboard navigation
-      const anyDateSelector = 'div[data-iso] div[role="button"]';
-      await page.waitForSelector(anyDateSelector, { timeout: 5000 });
-      await page.click(anyDateSelector);
+      console.log(`Approach 1: Direct text input for ${fieldName}...`);
       
-      // Use keyboard to navigate months
-      // First go back to current month
-      for (let i = 0; i < 12; i++) {
-        await page.keyboard.press('ArrowLeft');
-        await delay(100);
-      }
-      
-      // Now navigate to desired month/year
-      // This is a rough approach - we go forward by approximately the right number of months
-      const today = new Date();
-      const targetDate = new Date(year, month - 1, day);
-      
-      // Calculate months difference
-      const monthsDiff = (year - today.getFullYear()) * 12 + (month - 1 - today.getMonth());
-      
-      // Navigate forward by that many months (Page Right goes forward a month)
-      for (let i = 0; i < monthsDiff; i++) {
-        await page.keyboard.press('PageDown');
-        await delay(200);
-      }
-      
-      // Now use arrow keys to select the specific day
-      // This is approximate and may need adjustment
-      for (let i = 0; i < day; i++) {
-        await page.keyboard.press('ArrowRight');
-        await delay(100);
-      }
-      
-      // Select the date
-      await page.keyboard.press('Enter');
+      // Click on the date field
+      await page.waitForSelector(`input[placeholder="${fieldName}"]`, { timeout: 10000 });
+      await page.click(`input[placeholder="${fieldName}"]`);
       await delay(500);
       
-      console.log(`${fieldName} date selected using keyboard navigation`);
-    } catch (fallbackError) {
-      console.error(`Fallback date selection for ${fieldName} also failed:`, fallbackError);
-      throw new Error(`Unable to select ${fieldName} date using any method`);
+      // Clear any existing value
+      await page.keyboard.down('Control');
+      await page.keyboard.press('a');
+      await page.keyboard.up('Control');
+      await page.keyboard.press('Backspace');
+      await delay(300);
+      
+      // Format: MM/DD/YYYY
+      const dateString = `${month}/${day}/${year}`;
+      console.log(`Entering date directly: ${dateString}`);
+      await page.type(`input[placeholder="${fieldName}"]`, dateString, { delay: 100 });
+      await page.keyboard.press('Enter');
+      await delay(1000);
+      
+      // Verify the input worked by checking the field has a value
+      const dateValue = await page.$eval(`input[placeholder="${fieldName}"]`, el => el.value);
+      console.log(`Date field value after direct input: "${dateValue}"`);
+      
+      // Verify month is correct (should contain the month name)
+      if (dateValue && dateValue.length > 0) {
+        dateEntered = true;
+        console.log(`Successfully entered ${fieldName} date using direct text input`);
+      } else {
+        console.log(`Direct text input failed to set ${fieldName} date`);
+      }
+    } catch (error) {
+      console.log(`Error in direct text input for ${fieldName}:`, error.message);
     }
   }
+
+  // APPROACH 2: Alternative format MM-DD-YYYY
+  if (!dateEntered) {
+    try {
+      console.log(`Approach 2: Alternative date format for ${fieldName}...`);
+      
+      // Click on the date field
+      await page.click(`input[placeholder="${fieldName}"]`);
+      await delay(500);
+      
+      // Clear any existing value
+      await page.keyboard.down('Control');
+      await page.keyboard.press('a');
+      await page.keyboard.up('Control');
+      await page.keyboard.press('Backspace');
+      await delay(300);
+      
+      // Format: MM-DD-YYYY
+      const dateString = `${month}-${day}-${year}`;
+      console.log(`Entering date with alternative format: ${dateString}`);
+      await page.type(`input[placeholder="${fieldName}"]`, dateString, { delay: 100 });
+      await page.keyboard.press('Enter');
+      await delay(1000);
+      
+      // Verify the input worked
+      const dateValue = await page.$eval(`input[placeholder="${fieldName}"]`, el => el.value);
+      console.log(`Date field value after alternative format: "${dateValue}"`);
+      
+      if (dateValue && dateValue.length > 0) {
+        dateEntered = true;
+        console.log(`Successfully entered ${fieldName} date using alternative format`);
+      } else {
+        console.log(`Alternative format failed to set ${fieldName} date`);
+      }
+    } catch (error) {
+      console.log(`Error in alternative format for ${fieldName}:`, error.message);
+    }
+  }
+
+  // APPROACH 3: Full text month name
+  if (!dateEntered) {
+    try {
+      console.log(`Approach 3: Full text month for ${fieldName}...`);
+      
+      // Click on the date field
+      await page.click(`input[placeholder="${fieldName}"]`);
+      await delay(500);
+      
+      // Clear any existing value
+      await page.keyboard.down('Control');
+      await page.keyboard.press('a');
+      await page.keyboard.up('Control');
+      await page.keyboard.press('Backspace');
+      await delay(300);
+      
+      // Format: Month Day, Year
+      const dateString = `${targetMonth} ${day}, ${year}`;
+      console.log(`Entering date with text month: ${dateString}`);
+      await page.type(`input[placeholder="${fieldName}"]`, dateString, { delay: 100 });
+      await page.keyboard.press('Enter');
+      await delay(1000);
+      
+      // Verify the input worked
+      const dateValue = await page.$eval(`input[placeholder="${fieldName}"]`, el => el.value);
+      console.log(`Date field value after text month: "${dateValue}"`);
+      
+      if (dateValue && dateValue.length > 0) {
+        dateEntered = true;
+        console.log(`Successfully entered ${fieldName} date using text month`);
+      } else {
+        console.log(`Text month failed to set ${fieldName} date`);
+      }
+    } catch (error) {
+      console.log(`Error in text month for ${fieldName}:`, error.message);
+    }
+  }
+
+  // APPROACH 4: Tab to date field and type number sequences
+  if (!dateEntered) {
+    try {
+      console.log(`Approach 4: Tab and type numbers for ${fieldName}...`);
+      
+      // Focus on the input field
+      await page.focus(`input[placeholder="${fieldName}"]`);
+      await delay(500);
+      
+      // Clear any existing value
+      await page.keyboard.down('Control');
+      await page.keyboard.press('a');
+      await page.keyboard.up('Control');
+      await page.keyboard.press('Backspace');
+      await delay(300);
+      
+      // Type just the numbers with natural pauses
+      console.log(`Typing numbers: ${month} ${day} ${year}`);
+      await page.keyboard.type(month.toString(), { delay: 100 });
+      await delay(200);
+      await page.keyboard.press('Tab');
+      await delay(200);
+      await page.keyboard.type(day.toString(), { delay: 100 });
+      await delay(200);
+      await page.keyboard.press('Tab');
+      await delay(200);
+      await page.keyboard.type(year.toString(), { delay: 100 });
+      await delay(200);
+      await page.keyboard.press('Enter');
+      await delay(1000);
+      
+      // Verify the input worked
+      const dateValue = await page.$eval(`input[placeholder="${fieldName}"]`, el => el.value);
+      console.log(`Date field value after number entry: "${dateValue}"`);
+      
+      if (dateValue && dateValue.length > 0) {
+        dateEntered = true;
+        console.log(`Successfully entered ${fieldName} date using number entry`);
+      } else {
+        console.log(`Number entry failed to set ${fieldName} date`);
+      }
+    } catch (error) {
+      console.log(`Error in number entry for ${fieldName}:`, error.message);
+    }
+  }
+
+  // If none of the approaches worked, try a last resort method - click and wait
+  if (!dateEntered) {
+    try {
+      console.log(`Final approach: Click date field and press Tab for ${fieldName}`);
+      
+      // Click on the date field
+      await page.click(`input[placeholder="${fieldName}"]`);
+      await delay(1000);
+      
+      // Check for any dialog or date picker that might be open
+      console.log("Checking if date picker opened...");
+      
+      // Try to pick a date that might be visible - we just need any date to be set
+      await page.evaluate(() => {
+        // Find all elements that look like day cells
+        const dayElements = Array.from(document.querySelectorAll(
+          'td[role="gridcell"], div[role="button"], [data-day], [aria-label*="day"], [role="cell"]'
+        )).filter(el => el.offsetParent !== null); // Only consider visible elements
+        
+        // Click the first visible element that looks like a date
+        if (dayElements.length > 0) {
+          dayElements[15].click(); // Try middle of month
+          return true;
+        }
+        return false;
+      });
+      
+      await delay(1000);
+      await page.keyboard.press('Escape'); // Close any open picker
+      await delay(500);
+      await page.keyboard.press('Tab'); // Move focus away
+      
+      // Check if anything got set
+      const dateValue = await page.$eval(`input[placeholder="${fieldName}"]`, el => el.value);
+      console.log(`Date field value after final approach: "${dateValue}"`);
+      
+      if (dateValue && dateValue.length > 0) {
+        console.log(`Set some date for ${fieldName} using final approach`);
+      } else {
+        console.log(`All date entry methods failed for ${fieldName}`);
+      }
+    } catch (error) {
+      console.log(`Error in final approach for ${fieldName}:`, error.message);
+    }
+  }
+  
+  // Press Tab to move focus away from the date field
+  await page.keyboard.press('Tab');
+  await delay(500);
 }
 
 // Run the flight search
