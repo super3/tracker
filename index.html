@@ -23,6 +23,40 @@
             animation: flashBorder 1s 1;
             border-color: rgb(239, 68, 68);
         }
+        
+        /* Range slider styling */
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #2563eb;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .slider::-moz-range-thumb {
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #2563eb;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .slider::-webkit-slider-track {
+            height: 8px;
+            border-radius: 5px;
+            background: #e5e7eb;
+        }
+        
+        .slider::-moz-range-track {
+            height: 8px;
+            border-radius: 5px;
+            background: #e5e7eb;
+            border: none;
+        }
     </style>
     <script>
         // Add a global store for sharing state between components
@@ -73,6 +107,20 @@
                     </button>
                 </div>
                 <div class="flex space-x-4 items-center">
+                    <div class="relative" x-data="{ open: false, selectedStops: 1 }">
+                        <button @click="open = !open" class="text-gray-700 flex items-center py-2">
+                            <span class="material-symbols-outlined mr-1">connecting_airports</span>
+                            <span x-text="selectedStops === 0 ? 'Nonstop only' : selectedStops === 1 ? '1 stop or fewer' : '2 stops or fewer'">1 stop or fewer</span>
+                            <span class="material-symbols-outlined ml-1">arrow_drop_down</span>
+                        </button>
+                        <div x-show="open" @click.away="open = false" x-cloak class="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+                            <div class="py-1">
+                                <a href="#" @click.prevent="selectedStops = 0; $dispatch('stops-changed', 0); open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" :class="selectedStops === 0 ? 'bg-blue-50 text-blue-700' : ''">Nonstop only</a>
+                                <a href="#" @click.prevent="selectedStops = 1; $dispatch('stops-changed', 1); open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" :class="selectedStops === 1 ? 'bg-blue-50 text-blue-700' : ''">1 stop or fewer</a>
+                                <a href="#" @click.prevent="selectedStops = 2; $dispatch('stops-changed', 2); open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" :class="selectedStops === 2 ? 'bg-blue-50 text-blue-700' : ''">2 stops or fewer</a>
+                            </div>
+                        </div>
+                    </div>
                     <div class="relative" x-data="{ open: false, passengerCount: 1 }">
                         <button @click="open = !open" class="text-gray-700 flex items-center py-2">
                             <span class="material-symbols-outlined mr-1">person</span>
@@ -121,7 +169,29 @@
                 </div>
             </div>
             
-            <div x-data="searchForm()" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div x-data="searchForm()" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div class="border border-gray-300 rounded-lg p-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 grid-input" x-data="{ 
+                    budgetValue: 500,
+                    formatBudget(value) {
+                        if (value >= 5000) return '$5,000+';
+                        return '$' + value.toLocaleString();
+                    }
+                }">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-sm text-gray-600">Budget (per person)</label>
+                        <span class="text-lg font-medium" x-text="formatBudget(budgetValue)">$500</span>
+                    </div>
+                    <input 
+                        type="range" 
+                        min="100" 
+                        max="5000" 
+                        step="100"
+                        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" 
+                        x-model="budgetValue"
+                        @input="$dispatch('budget-changed', budgetValue)"
+                    >
+                </div>
+                
                 <div class="border border-gray-300 rounded-lg p-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 grid-input">
                     <label class="block text-sm text-gray-600 mb-1">From</label>
                     <div class="flex items-center relative" x-data="airportFrom()">
@@ -200,13 +270,13 @@
                             monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
                                         'August', 'September', 'October', 'November', 'December'],
                             
-                            // Format date to 'Mon, Jun 2' format
+                            // Format date to 'Mon, June 2' format
                             formatDate(date) {
                                 if (!(date instanceof Date)) {
                                     date = new Date(date);
                                 }
                                 const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
                                 return `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}`;
                             },
                             
@@ -247,14 +317,14 @@
                             
                             <!-- Exact Dates Option -->
                             <div x-show="$store.app.dateType === 'exact'">
-                                <div class="flex items-center justify-between w-full text-left">
-                                    <div class="relative">
+                                <div class="flex items-center w-full text-left space-x-1">
+                                    <div class="relative flex-1">
                                         <input 
                                             type="text" 
                                             x-model="formatDate(departDate)" 
                                             @click="departDateOpen = true"
                                             placeholder="Departure" 
-                                            class="w-32 mr-2 text-lg outline-none cursor-pointer" 
+                                            class="w-full text-lg outline-none cursor-pointer" 
                                             readonly
                                         />
                                         <div 
@@ -297,14 +367,14 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <span class="text-gray-500 mx-2">to</span>
-                                    <div class="relative">
+                                    <span class="text-gray-500 px-1">to</span>
+                                    <div class="relative flex-1">
                                         <input 
                                             type="text" 
                                             x-model="formatDate(returnDate)" 
                                             @click="returnDateOpen = true"
                                             placeholder="Return" 
-                                            class="w-32 ml-2 text-lg outline-none cursor-pointer" 
+                                            class="w-full text-lg outline-none cursor-pointer" 
                                             readonly
                                         />
                                         <div 
@@ -400,7 +470,7 @@
                     </div>
                 </div>
                 
-                <div class="flex items-center justify-center mt-2 mb-0 col-span-1 md:col-span-2 lg:col-span-3">
+                <div class="flex items-center justify-center mt-2 mb-0 col-span-1 md:col-span-2 lg:col-span-4">
                     <button 
                         class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition flex items-center"
                         @click="validateSearch"
@@ -496,6 +566,8 @@
         // Create a searchForm component for Alpine.js
         function searchForm() {
             return {
+                budgetMax: 500,
+                stopsPreference: 1,
                 fromCity: "Atlanta",
                 toCity: "New York",
                 departDate: "2025-06-22",
@@ -505,6 +577,28 @@
                 resultsVisible: false,
                 error: null,
                 toFieldError: false,
+                
+                init() {
+                    // Listen for budget changes
+                    this.$watch('budgetMax', (value) => {
+                        console.log('Budget changed to:', value);
+                    });
+                    
+                    // Listen for budget-changed events
+                    this.$el.addEventListener('budget-changed', (event) => {
+                        this.budgetMax = event.detail;
+                    });
+                    
+                    // Listen for stops preference changes
+                    this.$watch('stopsPreference', (value) => {
+                        console.log('Stops preference changed to:', value);
+                    });
+                    
+                    // Listen for stops-changed events
+                    this.$el.addEventListener('stops-changed', (event) => {
+                        this.stopsPreference = event.detail;
+                    });
+                },
                 
                 validateSearch() {
                     // Reset error state
