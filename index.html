@@ -184,15 +184,169 @@
                         <span class="material-symbols-outlined text-gray-500 mr-2">calendar_month</span>
                         
                         <!-- Date selector based on dateType -->
-                        <div class="relative w-full" x-data="{ open: false, selectedDuration: '4 days in June', 
-                                                               departDate: '2025-06-22', returnDate: '2025-06-26' }">
+                        <div class="relative w-full" x-data="{ 
+                            open: false, 
+                            departDateOpen: false,
+                            returnDateOpen: false,
+                            departMonth: 5, // June (0-indexed)
+                            returnMonth: 5,
+                            departYear: 2025,
+                            returnYear: 2025,
+                            selectedDuration: '4 days in June',
+                            departDate: new Date('2025-06-22'), 
+                            returnDate: new Date('2025-06-26'),
+                            
+                            // Month names for display
+                            monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
+                                        'August', 'September', 'October', 'November', 'December'],
+                            
+                            // Format date to 'Mon, Jun 2' format
+                            formatDate(date) {
+                                if (!(date instanceof Date)) {
+                                    date = new Date(date);
+                                }
+                                const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                return `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}`;
+                            },
+                            
+                            // Get days in month
+                            getDaysInMonth(year, month) {
+                                return new Date(year, month + 1, 0).getDate();
+                            },
+                            
+                            // Get first day of month (0 = Sunday, 1 = Monday, etc.)
+                            getFirstDayOfMonth(year, month) {
+                                return new Date(year, month, 1).getDay();
+                            },
+                            
+                            // Generate calendar days
+                            getCalendarDays(year, month) {
+                                const daysInMonth = this.getDaysInMonth(year, month);
+                                const firstDay = this.getFirstDayOfMonth(year, month);
+                                
+                                // Create blank spaces for days before the 1st
+                                const days = Array(firstDay).fill(null);
+                                
+                                // Add the actual days of the month
+                                for (let i = 1; i <= daysInMonth; i++) {
+                                    days.push(i);
+                                }
+                                
+                                return days;
+                            },
+                            
+                            // Initialize months
+                            init() {
+                                this.departMonth = this.departDate.getMonth();
+                                this.returnMonth = this.returnDate.getMonth();
+                                this.departYear = this.departDate.getFullYear();
+                                this.returnYear = this.returnDate.getFullYear();
+                            }
+                        }">
                             
                             <!-- Exact Dates Option -->
                             <div x-show="$store.app.dateType === 'exact'">
                                 <div class="flex items-center justify-between w-full text-left">
-                                    <input type="text" x-model="departDate" placeholder="Departure" class="w-24 mr-2 text-lg outline-none" />
+                                    <div class="relative">
+                                        <input 
+                                            type="text" 
+                                            x-model="formatDate(departDate)" 
+                                            @click="departDateOpen = true"
+                                            placeholder="Departure" 
+                                            class="w-32 mr-2 text-lg outline-none cursor-pointer" 
+                                            readonly
+                                        />
+                                        <div 
+                                            x-show="departDateOpen" 
+                                            @click.away="departDateOpen = false" 
+                                            class="absolute top-full left-0 mt-1 bg-white shadow-lg rounded-md p-2 z-20 w-64"
+                                            x-cloak
+                                        >
+                                            <div class="flex justify-between items-center mb-2">
+                                                <button 
+                                                    @click.prevent="departMonth--; if(departMonth < 0) { departMonth = 11; departYear--; }"
+                                                    class="text-gray-700 hover:text-blue-500"
+                                                >
+                                                    &lt;
+                                                </button>
+                                                <div class="font-medium" x-text="monthNames[departMonth] + ' ' + departYear"></div>
+                                                <button 
+                                                    @click.prevent="departMonth++; if(departMonth > 11) { departMonth = 0; departYear++; }"
+                                                    class="text-gray-700 hover:text-blue-500"
+                                                >
+                                                    &gt;
+                                                </button>
+                                            </div>
+                                            <div class="grid grid-cols-7 gap-1">
+                                                <template x-for="day in ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']">
+                                                    <div class="text-center text-xs font-bold text-gray-600 p-1" x-text="day"></div>
+                                                </template>
+                                                
+                                                <template x-for="(day, index) in getCalendarDays(departYear, departMonth)">
+                                                    <div 
+                                                        x-show="day !== null"
+                                                        @click="if(day) { departDate = new Date(departYear, departMonth, day); departDateOpen = false; }"
+                                                        :class="day && day === departDate.getDate() && departMonth === departDate.getMonth() && departYear === departDate.getFullYear() ? 
+                                                                'bg-blue-500 text-white' : 'hover:bg-gray-100'"
+                                                        class="text-center p-1 cursor-pointer rounded-sm"
+                                                        x-text="day"
+                                                    ></div>
+                                                    <div x-show="day === null" class="p-1"></div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <span class="text-gray-500 mx-2">to</span>
-                                    <input type="text" x-model="returnDate" placeholder="Return" class="w-24 ml-2 text-lg outline-none" />
+                                    <div class="relative">
+                                        <input 
+                                            type="text" 
+                                            x-model="formatDate(returnDate)" 
+                                            @click="returnDateOpen = true"
+                                            placeholder="Return" 
+                                            class="w-32 ml-2 text-lg outline-none cursor-pointer" 
+                                            readonly
+                                        />
+                                        <div 
+                                            x-show="returnDateOpen" 
+                                            @click.away="returnDateOpen = false" 
+                                            class="absolute top-full right-0 mt-1 bg-white shadow-lg rounded-md p-2 z-20 w-64"
+                                            x-cloak
+                                        >
+                                            <div class="flex justify-between items-center mb-2">
+                                                <button 
+                                                    @click.prevent="returnMonth--; if(returnMonth < 0) { returnMonth = 11; returnYear--; }"
+                                                    class="text-gray-700 hover:text-blue-500"
+                                                >
+                                                    &lt;
+                                                </button>
+                                                <div class="font-medium" x-text="monthNames[returnMonth] + ' ' + returnYear"></div>
+                                                <button 
+                                                    @click.prevent="returnMonth++; if(returnMonth > 11) { returnMonth = 0; returnYear++; }"
+                                                    class="text-gray-700 hover:text-blue-500"
+                                                >
+                                                    &gt;
+                                                </button>
+                                            </div>
+                                            <div class="grid grid-cols-7 gap-1">
+                                                <template x-for="day in ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']">
+                                                    <div class="text-center text-xs font-bold text-gray-600 p-1" x-text="day"></div>
+                                                </template>
+                                                
+                                                <template x-for="(day, index) in getCalendarDays(returnYear, returnMonth)">
+                                                    <div 
+                                                        x-show="day !== null"
+                                                        @click="if(day) { returnDate = new Date(returnYear, returnMonth, day); returnDateOpen = false; }"
+                                                        :class="day && day === returnDate.getDate() && returnMonth === returnDate.getMonth() && returnYear === returnDate.getFullYear() ? 
+                                                                'bg-blue-500 text-white' : 'hover:bg-gray-100'"
+                                                        class="text-center p-1 cursor-pointer rounded-sm"
+                                                        x-text="day"
+                                                    ></div>
+                                                    <div x-show="day === null" class="p-1"></div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -381,12 +535,21 @@
                     let departDate, returnDate, isFlexible;
                     
                     if (dateType === 'exact') {
-                        // Find the date inputs container
-                        const dateInputs = document.querySelectorAll('input[placeholder="Departure"], input[placeholder="Return"]');
-                        if (dateInputs.length >= 2) {
-                            departDate = dateInputs[0].value || this.departDate;
-                            returnDate = dateInputs[1].value || this.returnDate;
-                        } else {
+                        try {
+                            // Get the date objects directly from the component
+                            const dateComponent = document.querySelector('.border .relative[x-data]').__x.$data;
+                            if (dateComponent && dateComponent.departDate && dateComponent.returnDate) {
+                                // Format dates as YYYY-MM-DD for API
+                                departDate = dateComponent.departDate instanceof Date ? 
+                                    dateComponent.departDate.toISOString().split('T')[0] : this.departDate;
+                                returnDate = dateComponent.returnDate instanceof Date ? 
+                                    dateComponent.returnDate.toISOString().split('T')[0] : this.returnDate;
+                            } else {
+                                departDate = this.departDate;
+                                returnDate = this.returnDate;
+                            }
+                        } catch (e) {
+                            console.error("Error accessing date component:", e);
                             departDate = this.departDate;
                             returnDate = this.returnDate;
                         }
