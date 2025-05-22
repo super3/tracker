@@ -257,9 +257,13 @@ async function searchFlights(from, to, departDate, returnDate) {
       // Filter out elements with loading text or page headers
       const validElements = priceElements.filter(el => {
         const text = el.textContent || '';
+        // Exclude specific UI elements that are not actual flights
         return !text.includes('Loading results') && 
                !text.includes('Skip to main content') &&
-               !text.includes('Accessibility feedback');
+               !text.includes('Accessibility feedback') &&
+               !text.includes('Close dialog') &&
+               !text.includes('Additional fees') &&
+               !text.includes('To include bags');
       });
       
       console.log(`Found ${priceElements.length} price elements, ${validElements.length} after filtering`);
@@ -337,9 +341,19 @@ async function searchFlights(from, to, departDate, returnDate) {
             departureTime = timeMatches[0];
           }
           
-          // Extract airlines
-          const airlines = ['Delta', 'American', 'United', 'Southwest', 'JetBlue', 'Spirit', 'Frontier', 'Alaska'];
+          // Extract airlines - expanded list of airlines
+          const airlines = [
+            'Delta', 'American', 'United', 'Southwest', 'JetBlue', 
+            'Spirit', 'Frontier', 'Alaska', 'Hawaiian', 'Allegiant',
+            'Sun Country', 'Avelo', 'Breeze', 'Cape Air', 'Contour',
+            'Elite', 'JSX', 'Silver', 'Southern', 'Air Canada',
+            'Aeromexico', 'British Airways', 'Lufthansa', 'Turkish Airlines',
+            'Air France', 'KLM', 'Emirates', 'Qatar', 'Etihad'
+          ];
+          
           let airline = 'Airline not found';
+          
+          // First try exact airline names
           for (const a of airlines) {
             if (text.includes(a)) {
               airline = a;
@@ -347,7 +361,32 @@ async function searchFlights(from, to, departDate, returnDate) {
             }
           }
           
-          // Skip if price is not found or this is a duplicate flight
+          // If no airline found, try looking for airline codes
+          if (airline === 'Airline not found') {
+            const airlineCodes = {
+              'DL': 'Delta', 'AA': 'American', 'UA': 'United', 'WN': 'Southwest',
+              'B6': 'JetBlue', 'NK': 'Spirit', 'F9': 'Frontier', 'AS': 'Alaska',
+              'HA': 'Hawaiian', 'G4': 'Allegiant', 'SY': 'Sun Country'
+            };
+            
+            for (const [code, name] of Object.entries(airlineCodes)) {
+              if (text.includes(` ${code} `)) {
+                airline = name;
+                break;
+              }
+            }
+          }
+          
+          // Skip this entry if we don't have enough information 
+          // (must have price, times, and either airline or duration)
+          if (price === 'Price not found' || 
+              (departureTime === 'Time not found' && arrivalTime === 'Time not found') ||
+              (airline === 'Airline not found' && duration === 'Duration not found')) {
+            console.log('Skipping incomplete flight entry');
+            continue;
+          }
+          
+          // Skip if this is a duplicate flight
           const flightKey = `${price}-${airline}-${departureTime}-${arrivalTime}`;
           if (price !== 'Price not found' && !seenPrices.has(flightKey)) {
             seenPrices.add(flightKey);
