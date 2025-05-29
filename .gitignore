@@ -20,6 +20,11 @@ pids
 .env.test.local
 .env.production.local
 
+# Test coverage
+coverage/
+*.lcov
+.nyc_output/
+
 # Output files
 google-flights-results.png
 
