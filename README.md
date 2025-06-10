@@ -1,387 +1,451 @@
-# Web Scraping with Puppeteer
+# Delta Vacations Scraper API
 
-This repository contains examples of web scraping using Puppeteer, a Node.js library for controlling headless Chrome or Chromium.
+A REST API service that scrapes Delta Vacations for flight and hotel package deals.
 
-## Examples
+## 🚀 Features
 
-### 1. Basic URL Scraper
+- **Clean JSON API**: Transforms Delta's raw data into structured vacation packages
+- **Flight Information**: Times, airlines, prices, stops, and connections
+- **Hotel Details**: Names, star ratings, amenities, images, and pricing
+- **Dynamic Search**: Search by airport codes, dates, and passenger count
+- **CORS Support**: Ready for frontend integration
+- **TypeScript**: Full type safety
 
-A simple script that extracts all URLs from a webpage.
+## 📋 Table of Contents
 
-### 2. Google Flights Scraper
+- [Quick Start](#quick-start)
+- [API Endpoints](#api-endpoints)
+- [Request/Response Examples](#requestresponse-examples)
+- [Environment Variables](#environment-variables)
+- [Development](#development)
+- [Rate Limiting](#rate-limiting)
+- [Error Handling](#error-handling)
+- [Response Format](#response-format)
 
-An advanced script that searches for flight prices between cities on a specific date.
+## 🏃‍♂️ Quick Start
 
-## Installation
+### Prerequisites
 
-1. Make sure you have Node.js installed (version 14.x or later recommended)
-2. Clone this repository or download the files
-3. Install the dependencies:
+- Node.js 18+
+- npm or yarn
 
-```bash
-npm init -y
-npm install puppeteer
-```
-
-## Basic URL Scraper
-
-The `puppeteer_test.js` script extracts all hyperlinks from a webpage.
-
-### Usage
-
-```bash
-node puppeteer_test.js
-```
-
-### Features
-
-- Opens a visible browser window
-- Extracts all hyperlinks from the target webpage
-- Filters out non-HTTP links and empty URLs
-- Prints the list of found URLs to the console
-
-## Google Flights Scraper
-
-The `google_flights_scraper.js` script searches for flights on Google Flights.
-
-### Usage
+### Installation
 
 ```bash
-node google_flights_scraper.js
-```
-
-By default, it searches for one-way flights from Atlanta to New York on June 22, 2025. You can modify the script to change these parameters.
-
-### Features
-
-- Navigates to Google Flights
-- Sets search parameters (departure city, destination city, date)
-- Configures for one-way flights
-- Extracts flight information including:
-  - Airlines
-  - Departure and arrival times
-  - Flight duration
-  - Prices
-- Takes a screenshot of the results
-- Keeps the browser open for 10 seconds so you can see the results
-
-### Customization
-
-You can modify both scripts to:
-
-- Run in headless mode by changing `headless: false` to `headless: true`
-- Adjust viewport size by modifying the `defaultViewport` settings
-- Extract different types of content
-- Change the target websites
-
-## License
-
-MIT
-
-# Budget Vacay Flight Scraper
-
-A modular, testable Google Flights scraper built with Puppeteer for the Budget Vacay travel search application.
-
-## Features
-
-- 🧪 **Fully Testable**: Modular architecture with comprehensive unit tests
-- 🔧 **Configurable**: Easy to configure browser settings and search parameters
-- 📅 **Smart Date Handling**: Multiple date entry strategies with validation
-- 🔍 **Robust Selectors**: Fallback selectors for reliable automation
-- 📊 **Type Safety**: Clear interfaces and validation for all inputs
-- 🎯 **Error Handling**: Graceful error handling and cleanup
-
-## Installation
-
-```bash
+# Clone and install dependencies
+git clone <repository-url>
+cd deltaScraper/browserDelta
 npm install
+
+# Build the project
+npm run build
+
+# Start the API server
+npm run start:api
 ```
 
-## Quick Start
+The API will be available at `http://localhost:3000`
 
 ### Basic Usage
 
-```javascript
-const { searchFlights } = require('./google_flights_scraper');
+```bash
+# Health check
+curl http://localhost:3000/api/health
 
-// Simple search
-searchFlights('Atlanta', 'New York', '2025-06-22', '2025-06-25')
-  .then(result => console.log('Search completed:', result))
-  .catch(error => console.error('Search failed:', error));
+# Search vacation packages
+curl -X POST http://localhost:3000/api/search-vacations \
+  -H "Content-Type: application/json" \
+  -d '{
+    "originCode": "ATL",
+    "destinationCode": "MCO",
+    "departureDate": "2025-08-01",
+    "returnDate": "2025-08-08",
+    "passengers": 2
+  }'
 ```
 
-### Advanced Usage
+## 🛠 API Endpoints
 
-```javascript
-const { 
-  createFlightSearchConfig, 
-  createScraper 
-} = require('./google_flights_scraper');
+### `GET /api/health`
 
-// Create configuration with validation
-const config = createFlightSearchConfig('Atlanta', 'New York', '2025-06-22', '2025-06-25');
-const validation = config.validate();
+Health check endpoint to verify API status.
 
-if (!validation.isValid) {
-  console.error('Invalid configuration:', validation.errors);
-  return;
+**Response:**
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "uptime": 12345,
+  "version": "1.0.0"
 }
-
-// Create headless scraper
-const scraper = createScraper(true); // headless = true
-
-// Run search
-scraper.searchFlights(config)
-  .then(result => console.log('Success:', result))
-  .catch(error => console.error('Error:', error));
 ```
 
-## API Reference
+### `GET /api/docs`
 
-### Classes
+Returns interactive API documentation with examples and schema information.
 
-#### `DateUtils`
-Static utility class for date operations.
+### `POST /api/search-vacations`
 
-```javascript
-const { DateUtils } = require('./google_flights_scraper');
+Search for Delta vacation packages with dynamic parameters.
 
-// Format date for input fields
-const formatted = DateUtils.formatDateForInput('2025-06-22');
-// Returns: { year: 2025, month: 6, day: 22, monthName: 'June', ... }
+**Request Body:**
 
-// Validate date string
-const isValid = DateUtils.isValidDateString('2025-06-22'); // true
-
-// Get month name
-const monthName = DateUtils.getMonthName(6); // 'June'
-```
-
-#### `FlightSearchConfig`
-Configuration class with validation.
-
-```javascript
-const { FlightSearchConfig } = require('./google_flights_scraper');
-
-const config = new FlightSearchConfig('Atlanta', 'New York', '2025-06-22', '2025-06-25');
-
-// Validate configuration
-const validation = config.validate();
-if (validation.isValid) {
-  console.log('Config is valid');
-} else {
-  console.log('Errors:', validation.errors);
+```json
+{
+  "originCode": "string",           // Required: 3-letter airport code (e.g., "ATL")
+  "destinationCode": "string",      // Required: 3-letter airport code (e.g., "MCO")
+  "departureDate": "string",        // Required: YYYY-MM-DD format (e.g., "2025-08-01")
+  "returnDate": "string",           // Required: YYYY-MM-DD format (e.g., "2025-08-08")
+  "passengers": number,             // Required: 1-9 passengers
+  "destinationCity": "string",      // Optional: City name (e.g., "Orlando")
+  "destinationAirport": "string"    // Optional: Airport name (e.g., "Orlando International")
 }
-
-// Get formatted dates
-const departDate = config.getFormattedDepartDate();
-const returnDate = config.getFormattedReturnDate();
 ```
 
-#### `BrowserConfig`
-Browser configuration utilities.
+## 📝 Request/Response Examples
 
-```javascript
-const { BrowserConfig } = require('./google_flights_scraper');
+### Successful Search
 
-// Get default config (headless: false)
-const defaultConfig = BrowserConfig.getDefaultConfig();
-
-// Get headless config
-const headlessConfig = BrowserConfig.getHeadlessConfig();
-```
-
-#### `GoogleFlightsScraper`
-Main scraper class.
-
-```javascript
-const { GoogleFlightsScraper, BrowserConfig } = require('./google_flights_scraper');
-
-const scraper = new GoogleFlightsScraper(BrowserConfig.getHeadlessConfig());
-
-// Initialize browser
-await scraper.initialize();
-
-// Navigate to Google Flights
-await scraper.navigateToGoogleFlights();
-
-// Cleanup
-await scraper.cleanup();
-```
-
-### Factory Functions
-
-#### `createFlightSearchConfig(from, to, departDate, returnDate)`
-Creates a new `FlightSearchConfig` instance.
-
-#### `createScraper(headless = false)`
-Creates a new `GoogleFlightsScraper` instance with appropriate browser configuration.
-
-#### `searchFlights(from, to, departDate, returnDate)`
-Main convenience function for backward compatibility.
-
-## Testing
-
-### Run Tests
+**Request:**
 
 ```bash
-# Run all tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run tests with coverage
-npm run test:coverage
+curl -X POST http://localhost:3000/api/search-vacations \
+  -H "Content-Type: application/json" \
+  -d '{
+    "originCode": "ATL",
+    "destinationCode": "MCO",
+    "departureDate": "2025-08-01",
+    "returnDate": "2025-08-08",
+    "passengers": 2,
+    "destinationCity": "Orlando",
+    "destinationAirport": "Orlando International"
+  }'
 ```
 
-### Test Coverage
+**Response:**
 
-The test suite includes:
-
-- ✅ **DateUtils**: Date formatting, validation, and month name utilities
-- ✅ **FlightSearchConfig**: Configuration validation and error handling
-- ✅ **BrowserConfig**: Browser configuration utilities
-- ✅ **GoogleFlightsScraper**: Browser automation and search flow
-- ✅ **Factory Functions**: Creation utilities
-- ✅ **Integration Tests**: End-to-end functionality
-- ✅ **Edge Cases**: Leap years, invalid dates, error conditions
-
-### Coverage Thresholds
-
-- Branches: 80%
-- Functions: 80%
-- Lines: 80%
-- Statements: 80%
-
-## Running the Scraper
-
-### Command Line
-
-```bash
-# Run with default settings (visible browser)
-npm run scrape
-
-# Run headless
-npm run scrape:headless
-```
-
-### Programmatic Usage
-
-```javascript
-// Using the main function
-const { searchFlights } = require('./google_flights_scraper');
-await searchFlights('Atlanta', 'New York', '2025-06-22', '2025-06-25');
-
-// Using classes directly
-const { createFlightSearchConfig, createScraper } = require('./google_flights_scraper');
-
-const config = createFlightSearchConfig('Atlanta', 'New York', '2025-06-22', '2025-06-25');
-const scraper = createScraper(true); // headless
-await scraper.searchFlights(config);
-```
-
-## Configuration
-
-### Date Format
-All dates must be in `YYYY-MM-DD` format:
-- ✅ `2025-06-22`
-- ❌ `2025-6-22`
-- ❌ `06/22/2025`
-
-### Browser Settings
-The scraper supports various browser configurations:
-
-```javascript
-const customConfig = {
-  headless: true,
-  defaultViewport: { width: 1920, height: 1080 },
-  args: ['--no-sandbox', '--disable-web-security']
-};
-
-const scraper = new GoogleFlightsScraper(customConfig);
-```
-
-## Error Handling
-
-The scraper includes comprehensive error handling:
-
-```javascript
-try {
-  const result = await searchFlights('Atlanta', 'New York', '2025-06-22', '2025-06-25');
-  console.log('Success:', result);
-} catch (error) {
-  if (error.message.includes('Invalid configuration')) {
-    console.error('Configuration error:', error.message);
-  } else if (error.message.includes('Navigation failed')) {
-    console.error('Browser error:', error.message);
-  } else {
-    console.error('Unexpected error:', error);
+```json
+{
+  "success": true,
+  "data": {
+    "success": true,
+    "searchInfo": {
+      "origin": "ATL (Atlanta)",
+      "destination": "MCO (Orlando)",
+      "dates": "2025-08-01 - 2025-08-08",
+      "passengers": 2,
+      "totalResults": 25
+    },
+    "packages": [
+      {
+        "packageId": "MCO_HOTEL123_FLIGHT456",
+        "totalPrice": {
+          "perPerson": 1492.5,
+          "total": 2985.0,
+          "currency": "USD"
+        },
+        "flight": {
+          "outbound": {
+            "airline": "Delta",
+            "flightNumber": "DL1234",
+            "departure": {
+              "time": "08:30 AM",
+              "airport": "ATL",
+              "city": "Atlanta"
+            },
+            "arrival": {
+              "time": "10:15 AM",
+              "airport": "MCO",
+              "city": "Orlando"
+            },
+            "duration": "1h 45m",
+            "stops": 0,
+            "connection": null
+          },
+          "return": {
+            "airline": "Delta",
+            "flightNumber": "DL5678",
+            "departure": {
+              "time": "07:20 PM",
+              "airport": "MCO",
+              "city": "Orlando"
+            },
+            "arrival": {
+              "time": "09:05 PM",
+              "airport": "ATL",
+              "city": "Atlanta"
+            },
+            "duration": "1h 45m",
+            "stops": 0,
+            "connection": null
+          }
+        },
+        "hotel": {
+          "name": "Residence Inn by Marriott Orlando at SeaWorld",
+          "starRating": 3,
+          "address": "11000 Westwood Blvd, Orlando, FL 32821",
+          "location": {
+            "coordinates": {
+              "latitude": 28.4158,
+              "longitude": -81.4558
+            }
+          },
+          "amenities": [
+            "Pool",
+            "Fitness Center",
+            "In Room Wi-Fi Access",
+            "Kitchen"
+          ],
+          "images": [
+            "https://images.delta.com/hotel123_img1.jpg",
+            "https://images.delta.com/hotel123_img2.jpg"
+          ],
+          "checkIn": "2025-08-01",
+          "checkOut": "2025-08-08",
+          "nights": 7
+        }
+      }
+    ]
+  },
+  "meta": {
+    "requestId": "req_1705320600000",
+    "processingTimeMs": 8500,
+    "searchParams": {
+      "originCode": "ATL",
+      "destinationCode": "MCO",
+      "departureDate": "2025-08-01",
+      "returnDate": "2025-08-08",
+      "passengers": 2,
+      "destinationCity": "Orlando",
+      "destinationAirport": "Orlando International"
+    },
+    "timestamp": "2024-01-15T10:30:00.000Z"
   }
 }
 ```
 
-## Validation
+### Validation Error
 
-Input validation is built-in:
+**Response (400 Bad Request):**
 
-```javascript
-const config = createFlightSearchConfig('', '', 'invalid-date', 'invalid-date');
-const validation = config.validate();
-
-console.log(validation.isValid); // false
-console.log(validation.errors);  // Array of error messages
+```json
+{
+  "error": "Validation failed",
+  "details": [
+    "originCode must be a 3-letter airport code",
+    "departureDate must be in YYYY-MM-DD format"
+  ],
+  "hint": "See GET /api/docs for valid request format"
+}
 ```
 
-## Architecture
+### Rate Limit Error
 
-The refactored scraper follows these principles:
+**Response (429 Too Many Requests):**
 
-1. **Separation of Concerns**: Business logic separated from browser automation
-2. **Testability**: Pure functions and dependency injection
-3. **Modularity**: Each class has a single responsibility
-4. **Error Handling**: Graceful error handling and cleanup
-5. **Configuration**: Flexible configuration system
-6. **Validation**: Input validation with clear error messages
-
-## Browser Compatibility
-
-Tested with:
-- Chrome/Chromium (recommended)
-- Puppeteer default browser
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Date Validation Errors**
-   - Ensure dates are in `YYYY-MM-DD` format
-   - Check that return date is after departure date
-
-2. **Browser Launch Failures**
-   - Try running in headless mode
-   - Check that Puppeteer is properly installed
-
-3. **Selector Not Found**
-   - Google Flights may have updated their UI
-   - Check the `SELECTORS` constant for current selectors
-
-### Debug Mode
-
-Run with visible browser to debug issues:
-```javascript
-const scraper = createScraper(false); // visible browser
+```json
+{
+  "error": "Rate limit exceeded",
+  "message": "Too many requests. Please try again later.",
+  "retryAfter": 45
+}
 ```
 
-## Contributing
+## 🌍 Environment Variables
 
-When contributing:
+You can configure default search parameters using environment variables:
 
-1. Write tests for new functionality
-2. Maintain test coverage above 80%
-3. Follow the existing architecture patterns
-4. Update documentation for API changes
+```bash
+# Default search parameters (optional)
+ORIGIN_CODE=ATL                    # Default origin airport
+DESTINATION_CODE=MCO               # Default destination airport
+DEPARTURE_DATE=2025-08-01          # Default departure date
+RETURN_DATE=2025-08-08             # Default return date
+PASSENGERS=2                       # Default passenger count
+DESTINATION_CITY=Orlando           # Default destination city name
+DESTINATION_AIRPORT=Orlando International  # Default airport name
 
-## License
+# Server configuration
+PORT=3000                          # API server port (default: 3000)
+NODE_ENV=development               # Environment mode
+```
 
-MIT License - see LICENSE file for details.
+Example usage with environment variables:
+
+```bash
+ORIGIN_CODE=JFK DESTINATION_CODE=MIA npm run start:api
+```
+
+## 🔧 Development
+
+### Scripts
+
+```bash
+# Development (scraper only)
+npm run start:dev
+
+# Production scraper
+npm run start:prod
+
+# API server
+npm run start:api
+
+# Build TypeScript
+npm run build
+
+# Install Playwright browsers
+npm run postinstall
+```
+
+### Project Structure
+
+```
+browserDelta/
+├── src/
+│   ├── main.ts              # Original scraper entry point
+│   ├── routes.ts            # Core scraping logic & data transformation
+│   └── scraper-service.ts   # Modular scraper service class
+├── api-server.ts            # Express.js API server
+├── storage/
+│   ├── datasets/default/    # Scraped data output
+│   └── cookies/            # Saved browser cookies
+├── package.json
+└── README.md
+```
+
+### Adding New Features
+
+1. **Data Transformation**: Modify `transformDeltaResponse()` in `src/routes.ts`
+2. **API Endpoints**: Add new routes in `api-server.ts`
+3. **Validation**: Update validation logic in `scraper-service.ts`
+4. **Search Parameters**: Extend `SearchParams` interface
+
+## ⚡ Rate Limiting
+
+The API implements rate limiting to prevent bot detection and ensure fair usage:
+
+- **Limit**: 40 requests per minute per IP address
+- **Window**: 60 seconds
+- **Headers**: Rate limit info included in response headers
+  - `X-RateLimit-Limit`: Maximum requests allowed
+  - `X-RateLimit-Remaining`: Requests remaining in current window
+  - `X-RateLimit-Reset`: Unix timestamp when limit resets
+
+## 🚨 Error Handling
+
+### Common Error Codes
+
+| Code | Description           | Common Causes                                                   |
+| ---- | --------------------- | --------------------------------------------------------------- |
+| 400  | Bad Request           | Invalid airport codes, malformed dates, invalid passenger count |
+| 429  | Too Many Requests     | Rate limit exceeded                                             |
+| 500  | Internal Server Error | Scraping failed, Delta site changes                             |
+| 504  | Gateway Timeout       | Request took too long (>30 seconds)                             |
+
+### Error Response Format
+
+```json
+{
+  "success": false,
+  "error": "Error type",
+  "message": "Human-readable error message",
+  "details": "Technical details (development only)",
+  "meta": {
+    "processingTimeMs": 1250,
+    "timestamp": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+## 📊 Response Format
+
+### Main Response Structure
+
+```typescript
+interface APIResponse {
+  success: boolean;
+  data?: {
+    success: boolean;
+    searchInfo: SearchInfo;
+    packages: VacationPackage[];
+  };
+  error?: string;
+  message?: string;
+  meta: {
+    requestId: string;
+    processingTimeMs: number;
+    searchParams: SearchParams;
+    timestamp: string;
+  };
+}
+```
+
+### Vacation Package Structure
+
+```typescript
+interface VacationPackage {
+  packageId: string;
+  totalPrice: {
+    perPerson: number;
+    total: number;
+    currency: string;
+  };
+  flight: {
+    outbound: FlightSegment;
+    return: FlightSegment;
+  };
+  hotel: {
+    name: string;
+    starRating: number;
+    address: string;
+    location: {
+      coordinates: {
+        latitude: number;
+        longitude: number;
+      };
+    };
+    amenities: string[];
+    images: string[];
+    checkIn: string;
+    checkOut: string;
+    nights: number;
+  };
+}
+```
+
+### Amenity Mapping
+
+The API maps Delta's amenity codes to readable names:
+
+| Code | Amenity              |
+| ---- | -------------------- |
+| A    | Air Conditioning     |
+| B    | Beachfront           |
+| D    | Restaurant/Bar       |
+| F    | Fitness Center       |
+| G    | Golf on Property     |
+| I    | In Room Wi-Fi Access |
+| K    | Kitchen              |
+| P    | Pool                 |
+| S    | Spa                  |
+| T    | Tennis               |
+
+## 🏗 Production Considerations
+
+- **Redis**: Replace in-memory rate limiting with Redis for multi-instance deployments
+- **Monitoring**: Add logging, metrics, and health monitoring
+- **Caching**: Implement response caching for popular routes
+- **Load Balancing**: Use multiple instances behind a load balancer
+- **Error Tracking**: Integrate with Sentry or similar service
+- **Database**: Store search history and analytics
+
+## 📞 Support
+
+For questions, issues, or feature requests:
+
+1. Check existing issues in the repository
+2. Create a new issue with detailed reproduction steps
+3. Include API request/response examples when reporting bugs
+
+## 📜 License
