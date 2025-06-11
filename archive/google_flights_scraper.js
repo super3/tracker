@@ -1,15 +1,17 @@
 // Google Flights scraper for round-trip flights
-const puppeteer = require('puppeteer');
+const puppeteer = require("playwright");
 
 // Helper function for delays
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
  * Date utilities - pure functions that can be easily tested
  */
 class DateUtils {
   static formatDateForInput(dateString) {
-    const [year, month, day] = dateString.split('-').map(num => parseInt(num, 10));
+    const [year, month, day] = dateString
+      .split("-")
+      .map((num) => parseInt(num, 10));
     return {
       year,
       month,
@@ -17,26 +19,42 @@ class DateUtils {
       monthName: DateUtils.getMonthName(month),
       mmddyyyy: `${month}/${day}/${year}`,
       mmddyyyy_dash: `${month}-${day}-${year}`,
-      fullText: `${DateUtils.getMonthName(month)} ${day}, ${year}`
+      fullText: `${DateUtils.getMonthName(month)} ${day}, ${year}`,
     };
   }
 
   static getMonthName(monthNumber) {
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
-                        'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthNames = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
     return monthNames[monthNumber - 1];
   }
 
   static isValidDateString(dateString) {
     const regex = /^\d{4}-\d{2}-\d{2}$/;
     if (!regex.test(dateString)) return false;
-    
-    const [year, month, day] = dateString.split('-').map(num => parseInt(num, 10));
+
+    const [year, month, day] = dateString
+      .split("-")
+      .map((num) => parseInt(num, 10));
     const date = new Date(year, month - 1, day);
-    
-    return date.getFullYear() === year && 
-           date.getMonth() === month - 1 && 
-           date.getDate() === day;
+
+    return (
+      date.getFullYear() === year &&
+      date.getMonth() === month - 1 &&
+      date.getDate() === day
+    );
   }
 }
 
@@ -53,35 +71,35 @@ class FlightSearchConfig {
 
   validate() {
     const errors = [];
-    
+
     if (!this.from || this.from.trim().length === 0) {
-      errors.push('Departure city is required');
+      errors.push("Departure city is required");
     }
-    
+
     if (!this.to || this.to.trim().length === 0) {
-      errors.push('Destination city is required');
+      errors.push("Destination city is required");
     }
-    
+
     if (!DateUtils.isValidDateString(this.departDate)) {
-      errors.push('Invalid departure date format. Use YYYY-MM-DD');
+      errors.push("Invalid departure date format. Use YYYY-MM-DD");
     }
-    
+
     if (!DateUtils.isValidDateString(this.returnDate)) {
-      errors.push('Invalid return date format. Use YYYY-MM-DD');
+      errors.push("Invalid return date format. Use YYYY-MM-DD");
     }
-    
+
     if (errors.length === 0) {
       const departureDate = new Date(this.departDate);
       const returnDate = new Date(this.returnDate);
-      
+
       if (returnDate <= departureDate) {
-        errors.push('Return date must be after departure date');
+        errors.push("Return date must be after departure date");
       }
     }
-    
+
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -103,19 +121,19 @@ class BrowserConfig {
       headless: false,
       defaultViewport: { width: 1200, height: 800 },
       args: [
-        '--no-sandbox', 
-        '--disable-setuid-sandbox', 
-        '--disable-dev-shm-usage', 
-        '--disable-accelerated-2d-canvas', 
-        '--disable-gpu'
-      ]
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-accelerated-2d-canvas",
+        "--disable-gpu",
+      ],
     };
   }
 
   static getHeadlessConfig() {
     return {
       ...BrowserConfig.getDefaultConfig(),
-      headless: true
+      headless: true,
     };
   }
 }
@@ -135,17 +153,17 @@ const SELECTORS = {
     'button[data-test-id="search-button"]',
     'button[data-test-id="submit-button"]',
     'button[aria-label*="search"]',
-    'button.gws-flights__search-button',
-    'button.gws-flights-form__search-button',
-    'button:has-text("Search")'
+    "button.gws-flights__search-button",
+    "button.gws-flights-form__search-button",
+    'button:has-text("Search")',
   ],
   LOADING_INDICATORS: [
-    '[role="progressbar"]', 
+    '[role="progressbar"]',
     '[aria-label*="Loading"]',
     '[aria-busy="true"]',
-    '.loading-animation',
-    '.progress-bar'
-  ]
+    ".loading-animation",
+    ".progress-bar",
+  ],
 };
 
 /**
@@ -170,15 +188,15 @@ class PageInteractions {
 
   async clearInput(selector) {
     await this.page.click(selector);
-    await this.page.keyboard.down('Control');
-    await this.page.keyboard.press('a');
-    await this.page.keyboard.up('Control');
-    await this.page.keyboard.press('Backspace');
+    await this.page.keyboard.down("Control");
+    await this.page.keyboard.press("a");
+    await this.page.keyboard.up("Control");
+    await this.page.keyboard.press("Backspace");
     await delay(300);
   }
 
   async getInputValue(selector) {
-    return await this.page.$eval(selector, el => el.value);
+    return await this.page.$eval(selector, (el) => el.value);
   }
 
   async selectFirstSuggestion() {
@@ -200,12 +218,12 @@ class DateEntryStrategies {
     try {
       console.log(`Trying direct input for ${fieldName}...`);
       const selector = `input[placeholder="${fieldName}"]`;
-      
+
       await this.pageInteractions.clearInput(selector);
       await this.pageInteractions.typeText(selector, formattedDate.mmddyyyy);
-      await this.pageInteractions.page.keyboard.press('Enter');
+      await this.pageInteractions.page.keyboard.press("Enter");
       await delay(1000);
-      
+
       const value = await this.pageInteractions.getInputValue(selector);
       return value && value.length > 0;
     } catch (error) {
@@ -218,12 +236,15 @@ class DateEntryStrategies {
     try {
       console.log(`Trying alternative format for ${fieldName}...`);
       const selector = `input[placeholder="${fieldName}"]`;
-      
+
       await this.pageInteractions.clearInput(selector);
-      await this.pageInteractions.typeText(selector, formattedDate.mmddyyyy_dash);
-      await this.pageInteractions.page.keyboard.press('Enter');
+      await this.pageInteractions.typeText(
+        selector,
+        formattedDate.mmddyyyy_dash
+      );
+      await this.pageInteractions.page.keyboard.press("Enter");
       await delay(1000);
-      
+
       const value = await this.pageInteractions.getInputValue(selector);
       return value && value.length > 0;
     } catch (error) {
@@ -236,12 +257,12 @@ class DateEntryStrategies {
     try {
       console.log(`Trying full text format for ${fieldName}...`);
       const selector = `input[placeholder="${fieldName}"]`;
-      
+
       await this.pageInteractions.clearInput(selector);
       await this.pageInteractions.typeText(selector, formattedDate.fullText);
-      await this.pageInteractions.page.keyboard.press('Enter');
+      await this.pageInteractions.page.keyboard.press("Enter");
       await delay(1000);
-      
+
       const value = await this.pageInteractions.getInputValue(selector);
       return value && value.length > 0;
     } catch (error) {
@@ -254,23 +275,32 @@ class DateEntryStrategies {
     try {
       console.log(`Trying number sequence for ${fieldName}...`);
       const selector = `input[placeholder="${fieldName}"]`;
-      
+
       await this.pageInteractions.page.focus(selector);
       await this.pageInteractions.clearInput(selector);
-      
-      await this.pageInteractions.page.keyboard.type(formattedDate.month.toString(), { delay: 100 });
+
+      await this.pageInteractions.page.keyboard.type(
+        formattedDate.month.toString(),
+        { delay: 100 }
+      );
       await delay(200);
-      await this.pageInteractions.page.keyboard.press('Tab');
+      await this.pageInteractions.page.keyboard.press("Tab");
       await delay(200);
-      await this.pageInteractions.page.keyboard.type(formattedDate.day.toString(), { delay: 100 });
+      await this.pageInteractions.page.keyboard.type(
+        formattedDate.day.toString(),
+        { delay: 100 }
+      );
       await delay(200);
-      await this.pageInteractions.page.keyboard.press('Tab');
+      await this.pageInteractions.page.keyboard.press("Tab");
       await delay(200);
-      await this.pageInteractions.page.keyboard.type(formattedDate.year.toString(), { delay: 100 });
+      await this.pageInteractions.page.keyboard.type(
+        formattedDate.year.toString(),
+        { delay: 100 }
+      );
       await delay(200);
-      await this.pageInteractions.page.keyboard.press('Enter');
+      await this.pageInteractions.page.keyboard.press("Enter");
       await delay(1000);
-      
+
       const value = await this.pageInteractions.getInputValue(selector);
       return value && value.length > 0;
     } catch (error) {
@@ -305,33 +335,44 @@ class GoogleFlightsScraper {
   }
 
   async navigateToGoogleFlights() {
-    console.log('Navigating to Google Flights...');
-    await this.page.goto('https://www.google.com/travel/flights', { 
-      waitUntil: 'networkidle2',
-      timeout: 60000
+    console.log("Navigating to Google Flights...");
+    await this.page.goto("https://www.google.com/travel/flights", {
+      waitUntil: "networkidle2",
+      timeout: 60000,
     });
-    
+
     await this.pageInteractions.waitForSelector(SELECTORS.MAIN_CONTENT, 30000);
-    console.log('Page loaded successfully');
+    console.log("Page loaded successfully");
   }
 
   async ensureRoundTripMode() {
-    console.log('Verifying round-trip is selected...');
+    console.log("Verifying round-trip is selected...");
     try {
-      await this.pageInteractions.waitForSelector(SELECTORS.TRIP_TYPE_BUTTON, 5000);
-      
-      const tripTypeText = await this.page.$eval(SELECTORS.TRIP_TYPE_BUTTON, el => el.textContent);
-      
-      if (!tripTypeText.toLowerCase().includes('round trip')) {
+      await this.pageInteractions.waitForSelector(
+        SELECTORS.TRIP_TYPE_BUTTON,
+        5000
+      );
+
+      const tripTypeText = await this.page.$eval(
+        SELECTORS.TRIP_TYPE_BUTTON,
+        (el) => el.textContent
+      );
+
+      if (!tripTypeText.toLowerCase().includes("round trip")) {
         await this.pageInteractions.clickElement(SELECTORS.TRIP_TYPE_BUTTON);
-        await this.pageInteractions.waitForSelector(SELECTORS.ROUND_TRIP_OPTION, 5000);
+        await this.pageInteractions.waitForSelector(
+          SELECTORS.ROUND_TRIP_OPTION,
+          5000
+        );
         await this.pageInteractions.clickElement(SELECTORS.ROUND_TRIP_OPTION);
-        console.log('Set to round-trip');
+        console.log("Set to round-trip");
       } else {
-        console.log('Already in round-trip mode');
+        console.log("Already in round-trip mode");
       }
     } catch (error) {
-      console.log('Could not verify trip type. Continuing with default (usually round-trip)...');
+      console.log(
+        "Could not verify trip type. Continuing with default (usually round-trip)..."
+      );
     }
   }
 
@@ -343,41 +384,44 @@ class GoogleFlightsScraper {
   }
 
   async enterDepartureLocation(from) {
-    console.log('Entering departure location...');
+    console.log("Entering departure location...");
     await this.enterLocation(SELECTORS.FROM_INPUT, from);
   }
 
   async enterDestination(to) {
-    console.log('Entering destination...');
+    console.log("Entering destination...");
     await this.enterLocation(SELECTORS.TO_INPUT, to);
   }
 
   async enterDate(fieldName, formattedDate) {
     console.log(`Setting ${fieldName} date...`);
-    
+
     const strategies = [
       () => this.dateEntryStrategies.tryDirectInput(fieldName, formattedDate),
-      () => this.dateEntryStrategies.tryAlternativeFormat(fieldName, formattedDate),
-      () => this.dateEntryStrategies.tryFullTextFormat(fieldName, formattedDate),
-      () => this.dateEntryStrategies.tryNumberSequence(fieldName, formattedDate)
+      () =>
+        this.dateEntryStrategies.tryAlternativeFormat(fieldName, formattedDate),
+      () =>
+        this.dateEntryStrategies.tryFullTextFormat(fieldName, formattedDate),
+      () =>
+        this.dateEntryStrategies.tryNumberSequence(fieldName, formattedDate),
     ];
 
     for (const strategy of strategies) {
       if (await strategy()) {
         console.log(`Successfully entered ${fieldName} date`);
-        await this.page.keyboard.press('Tab');
+        await this.page.keyboard.press("Tab");
         await delay(500);
         return true;
       }
     }
-    
+
     console.log(`All date entry methods failed for ${fieldName}`);
     return false;
   }
 
   async clickSearchButton() {
-    console.log('Executing search...');
-    
+    console.log("Executing search...");
+
     for (const selector of SELECTORS.SEARCH_BUTTONS) {
       try {
         const buttonExists = await this.page.$(selector);
@@ -390,18 +434,25 @@ class GoogleFlightsScraper {
         continue;
       }
     }
-    
+
     // Fallback to generic search
     return await this.page.evaluate(() => {
-      const buttons = Array.from(document.querySelectorAll('button'));
-      
+      const buttons = Array.from(document.querySelectorAll("button"));
+
       for (const button of buttons) {
         const text = button.textContent.toLowerCase();
-        const ariaLabel = (button.getAttribute('aria-label') || '').toLowerCase();
-        
-        if (text.includes('search') || ariaLabel.includes('search') || 
-            text.includes('find') || ariaLabel.includes('find') ||
-            text.includes('go') || ariaLabel.includes('go')) {
+        const ariaLabel = (
+          button.getAttribute("aria-label") || ""
+        ).toLowerCase();
+
+        if (
+          text.includes("search") ||
+          ariaLabel.includes("search") ||
+          text.includes("find") ||
+          ariaLabel.includes("find") ||
+          text.includes("go") ||
+          ariaLabel.includes("go")
+        ) {
           button.click();
           return true;
         }
@@ -411,15 +462,18 @@ class GoogleFlightsScraper {
   }
 
   async waitForResults() {
-    console.log('Waiting for search results...');
-    
+    console.log("Waiting for search results...");
+
     // Wait for loading indicators to disappear
     for (const selector of SELECTORS.LOADING_INDICATORS) {
       try {
         const loadingElement = await this.page.$(selector);
         if (loadingElement) {
           await this.page.waitForFunction(
-            (sel) => !document.querySelector(sel) || document.querySelector(sel).getAttribute('aria-hidden') === 'true', 
+            (sel) =>
+              !document.querySelector(sel) ||
+              document.querySelector(sel).getAttribute("aria-hidden") ===
+                "true",
             { timeout: 60000 },
             selector
           );
@@ -429,49 +483,51 @@ class GoogleFlightsScraper {
         continue;
       }
     }
-    
+
     // Wait for URL change
     try {
       await this.page.waitForFunction(
-        () => window.location.href.includes('flights/search') || 
-              window.location.href.includes('flights/results') || 
-              window.location.href.includes('flights?'), 
+        () =>
+          window.location.href.includes("flights/search") ||
+          window.location.href.includes("flights/results") ||
+          window.location.href.includes("flights?"),
         { timeout: 30000 }
       );
     } catch (e) {
-      console.log('URL did not change as expected, but continuing...');
+      console.log("URL did not change as expected, but continuing...");
     }
-    
+
     await delay(10000); // Extra time for results to render
   }
 
   async searchFlights(config) {
     const validation = config.validate();
     if (!validation.isValid) {
-      throw new Error(`Invalid configuration: ${validation.errors.join(', ')}`);
+      throw new Error(`Invalid configuration: ${validation.errors.join(", ")}`);
     }
 
-    console.log(`Searching for flights from ${config.from} to ${config.to} (${config.departDate} - ${config.returnDate})`);
-    
+    console.log(
+      `Searching for flights from ${config.from} to ${config.to} (${config.departDate} - ${config.returnDate})`
+    );
+
     try {
       await this.initialize();
       await this.navigateToGoogleFlights();
       await this.ensureRoundTripMode();
       await this.enterDepartureLocation(config.from);
       await this.enterDestination(config.to);
-      await this.enterDate('Departure', config.getFormattedDepartDate());
-      await this.enterDate('Return', config.getFormattedReturnDate());
-      
+      await this.enterDate("Departure", config.getFormattedDepartDate());
+      await this.enterDate("Return", config.getFormattedReturnDate());
+
       const searchSuccess = await this.clickSearchButton();
       if (!searchSuccess) {
-        throw new Error('Could not find or click search button');
+        throw new Error("Could not find or click search button");
       }
-      
+
       await this.waitForResults();
-      
-      console.log('Flight search completed successfully');
-      return { success: true, message: 'Search completed' };
-      
+
+      console.log("Flight search completed successfully");
+      return { success: true, message: "Search completed" };
     } finally {
       await this.cleanup();
     }
@@ -485,7 +541,9 @@ function createFlightSearchConfig(from, to, departDate, returnDate) {
 
 // Factory function for creating scrapers
 function createScraper(headless = false) {
-  const config = headless ? BrowserConfig.getHeadlessConfig() : BrowserConfig.getDefaultConfig();
+  const config = headless
+    ? BrowserConfig.getHeadlessConfig()
+    : BrowserConfig.getDefaultConfig();
   return new GoogleFlightsScraper(config);
 }
 
@@ -506,21 +564,21 @@ module.exports = {
   createScraper,
   searchFlights,
   SELECTORS,
-  delay
+  delay,
 };
 
 // Run if this file is executed directly
 if (require.main === module) {
-  const departureCity = 'Atlanta';
-  const destinationCity = 'New York';
-  const departureDate = '2025-06-22';
-  const returnDate = '2025-06-25';
+  const departureCity = "Atlanta";
+  const destinationCity = "New York";
+  const departureDate = "2025-06-22";
+  const returnDate = "2025-06-25";
 
   searchFlights(departureCity, destinationCity, departureDate, returnDate)
-    .then(result => {
-      console.log('Flight search completed:', result);
+    .then((result) => {
+      console.log("Flight search completed:", result);
     })
-    .catch(error => {
-      console.error('Flight search failed:', error);
+    .catch((error) => {
+      console.error("Flight search failed:", error);
     });
-} 
+}

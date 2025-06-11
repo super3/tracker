@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+yarn.lock
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.log
+
+# Environment variables
+.env
+.env.test
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Test coverage
+coverage/
+*.lcov
+.nyc_output/
+
+# Output files
+google-flights-results.png
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db 
+
+# scraper
+scraperDelta/node_modules/
+scraperDelta/.env
+scraperDelta/.env.local
+scraperDelta/dist/
+scraperDelta/storage
+scraperDelta/README.html
