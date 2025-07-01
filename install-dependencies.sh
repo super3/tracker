@@ -7,16 +7,30 @@ set -e
 
 echo "🚀 Installing system dependencies for Delta Vacations Scraper..."
 
-# Check if running on Linux
-if [[ "$OSTYPE" != "linux-gnu"* ]]; then
-    echo "❌ This script is designed for Linux systems only."
-    echo "   For other systems, please refer to the Playwright documentation:"
-    echo "   https://playwright.dev/docs/intro#system-requirements"
-    exit 1
-fi
+# Check operating system
+case "$OSTYPE" in
+    darwin*)
+        echo "🍎 Detected macOS"
+        ;;
+    linux-gnu*)
+        echo "🐧 Detected Linux"
+        ;;
+    *)
+        echo "❌ Unsupported operating system: $OSTYPE"
+        echo "   This script supports macOS and Linux only."
+        echo "   For other systems, please refer to the Playwright documentation:"
+        echo "   https://playwright.dev/docs/intro#system-requirements"
+        exit 1
+        ;;
+esac
 
-# Detect package manager
-if command -v apt-get &> /dev/null; then
+# Handle macOS (no additional system dependencies needed)
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "✅ macOS detected - Playwright browsers will work without additional system packages"
+    echo "   Note: Playwright automatically downloads all necessary dependencies on macOS"
+    
+# Detect package manager for Linux systems
+elif command -v apt-get &> /dev/null; then
     echo "📦 Detected APT package manager (Ubuntu/Debian)"
     
     echo "   Updating package lists..."
