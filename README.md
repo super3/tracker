@@ -70,6 +70,18 @@ Run the provided script to automatically install system dependencies:
 ./install-dependencies.sh
 ```
 
+**Option 1a: Hybrid approach with Node.js alternatives (experimental)**
+
+Some dependencies can be replaced with Node.js packages in specific scenarios:
+
+```bash
+# Install XML processing via Node.js instead of system libxslt
+npm install libxslt
+
+# Still need core Playwright system dependencies
+./install-dependencies.sh --minimal
+```
+
 **Option 2: Manual installation (Ubuntu/Debian)**
 
 ```bash
