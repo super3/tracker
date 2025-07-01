@@ -28,6 +28,15 @@ A REST API service that scrapes Delta Vacations for flight and hotel package dea
 
 - Node.js 18+
 - npm or yarn
+- Linux system with the following packages (for Playwright browser support):
+  - `libgstreamer1.0-0`
+  - `libgstreamer-plugins-base1.0-0` 
+  - `libgtk-4-1`
+  - `libgraphene-1.0-0`
+  - `libxslt1.1`
+  - `libevent-2.1-7t64`
+  - `libopus0`
+  - `libvpx9`
 
 ### Installation
 
@@ -43,6 +52,27 @@ npm run build
 # Start the API server
 npm run start:api
 ```
+
+### System Dependencies
+
+**Option 1: Use the automatic installer (recommended)**
+
+Run the provided script to automatically install system dependencies:
+
+```bash
+./install-dependencies.sh
+```
+
+**Option 2: Manual installation (Ubuntu/Debian)**
+
+```bash
+sudo apt-get update
+sudo apt-get install -y libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 libgtk-4-1 libgraphene-1.0-0 libxslt1.1 libevent-2.1-7t64 libopus0 libvpx9
+```
+
+**Other Linux distributions:**
+
+The installer script supports Ubuntu/Debian (apt), RHEL/CentOS/Fedora (yum), and Arch Linux (pacman). For other distributions, refer to the [Playwright system requirements](https://playwright.dev/docs/intro#system-requirements).
 
 The API will be available at `http://localhost:3000`
 
@@ -307,10 +337,12 @@ browserDelta/
 │   ├── routes.ts            # Core scraping logic & data transformation
 │   └── scraper-service.ts   # Modular scraper service class
 ├── api-server.ts            # Express.js API server
+├── install-dependencies.sh  # System dependencies installer
 ├── storage/
 │   ├── datasets/default/    # Scraped data output
 │   └── cookies/            # Saved browser cookies
 ├── package.json
+├── tsconfig.json
 └── README.md
 ```
 
