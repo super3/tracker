@@ -29,6 +29,22 @@ A REST API service that scrapes Delta Vacations for flight and hotel package dea
 - Node.js 18+
 - npm or yarn
 
+#### System Support:
+
+✅ **macOS 10.14 (Mojave) or later**
+- Fully supported with zero additional setup
+- Intel and Apple Silicon (M1/M2) Macs supported
+- Playwright automatically manages all browser dependencies
+
+✅ **Linux distributions**
+- Ubuntu 18.04+, Debian 10+, CentOS 7+, Fedora 36+
+- System packages required (automatically installed by our script)
+- x86-64 and ARM64 architectures supported
+
+❌ **Windows**
+- Not currently supported in this configuration
+- Consider using WSL (Windows Subsystem for Linux) with Ubuntu
+
 ### Installation
 
 ```bash
@@ -44,7 +60,55 @@ npm run build
 npm run start:api
 ```
 
+### System Dependencies
+
+**Option 1: Use the automatic installer (recommended)**
+
+Run the provided script to automatically install system dependencies:
+
+```bash
+./install-dependencies.sh
+```
+
+**Option 1a: Hybrid approach with Node.js alternatives (experimental)**
+
+Some dependencies can be replaced with Node.js packages in specific scenarios:
+
+```bash
+# Install XML processing via Node.js instead of system libxslt
+npm install libxslt
+
+# Still need core Playwright system dependencies
+./install-dependencies.sh --minimal
+```
+
+**Option 2: Manual installation (Ubuntu/Debian)**
+
+```bash
+sudo apt-get update
+sudo apt-get install -y libgstreamer1.0-0 libgstreamer-plugins-base1.0-0 libgtk-4-1 libgraphene-1.0-0 libxslt1.1 libevent-2.1-7t64 libopus0 libvpx9
+```
+
+**macOS:**
+
+No additional dependencies needed! The installer script will confirm macOS compatibility.
+
+**Other Linux distributions:**
+
+The installer script supports Ubuntu/Debian (apt), RHEL/CentOS/Fedora (yum), and Arch Linux (pacman). For other distributions, refer to the [Playwright system requirements](https://playwright.dev/docs/intro#system-requirements).
+
 The API will be available at `http://localhost:3000`
+
+### Quick Start for macOS
+
+```bash
+# macOS users can start immediately after Node.js installation
+npm install
+npm run build
+npm run start:api
+```
+
+The Playwright browsers will download automatically during `npm install` with no additional setup required.
 
 ### Basic Usage
 
@@ -307,10 +371,12 @@ browserDelta/
 │   ├── routes.ts            # Core scraping logic & data transformation
 │   └── scraper-service.ts   # Modular scraper service class
 ├── api-server.ts            # Express.js API server
+├── install-dependencies.sh  # System dependencies installer
 ├── storage/
 │   ├── datasets/default/    # Scraped data output
 │   └── cookies/            # Saved browser cookies
 ├── package.json
+├── tsconfig.json
 └── README.md
 ```
 
