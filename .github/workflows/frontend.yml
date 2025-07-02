@@ -1,5 +1,5 @@
-# Simple workflow for deploying static content to GitHub Pages
-name: Deploy static content to Pages
+# Workflow for deploying frontend to GitHub Pages
+name: Deploy Frontend to Pages
 
 on:
   # Runs on pushes targeting the default branch
@@ -36,7 +36,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
+          # Upload frontend files (index.html and airports.js are in root)
           path: '.'
       - name: Deploy to GitHub Pages
         id: deployment
