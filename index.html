@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Budget Vacay</title>
+    <title>Delta Vacations - Flight & Hotel Packages</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="airports.js"></script>
@@ -24,45 +24,25 @@
             border-color: rgb(239, 68, 68);
         }
         
-        /* Range slider styling */
-        .slider::-webkit-slider-thumb {
-            appearance: none;
-            height: 20px;
-            width: 20px;
-            border-radius: 50%;
-            background: #2563eb;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        /* Hotel amenity icons */
+        .amenity-icon {
+            @apply text-gray-600 text-sm;
         }
         
-        .slider::-moz-range-thumb {
-            height: 20px;
-            width: 20px;
-            border-radius: 50%;
-            background: #2563eb;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        /* Loading spinner */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
-        
-        .slider::-webkit-slider-track {
-            height: 8px;
-            border-radius: 5px;
-            background: #e5e7eb;
-        }
-        
-        .slider::-moz-range-track {
-            height: 8px;
-            border-radius: 5px;
-            background: #e5e7eb;
-            border: none;
+        .animate-spin {
+            animation: spin 1s linear infinite;
         }
     </style>
     <script>
         // Add a global store for sharing state between components
         document.addEventListener('alpine:init', () => {
             Alpine.store('app', {
-                dateType: 'exact'
+                dateType: 'exact',
+                passengers: 2
             });
         });
     </script>
@@ -72,127 +52,22 @@
         <div class="container mx-auto px-4 py-2">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-4">
-                    <div class="text-xl font-semibold text-blue-600">Budget Vacay</div>
+                    <div class="text-xl font-semibold text-blue-600">Delta Vacations</div>
                     <nav class="hidden md:flex space-x-6">
-                        <a href="#" class="text-blue-600 border-b-2 border-blue-600 px-1 py-4">Flights</a>
+                        <a href="#" class="text-blue-600 border-b-2 border-blue-600 px-1 py-4">Vacation Packages</a>
                     </nav>
                 </div>
-                <!--<div class="flex items-center space-x-4">
-                    <button class="text-gray-600">
-                        <span class="material-symbols-outlined">language</span>
-                    </button>
-                    <button class="text-gray-600">
-                        <span class="material-symbols-outlined">help</span>
-                    </button>
-                </div>-->
             </div>
         </div>
     </header>
 
     <main class="container mx-auto px-4 py-6 flex-grow">
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-            <div class="flex flex-col md:flex-row justify-between mb-4">
-                <div class="flex space-x-4 mb-4 md:mb-0" x-data>
-                    <button 
-                        @click="$store.app.dateType = 'exact'" 
-                        :class="$store.app.dateType === 'exact' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'"
-                        class="px-4 py-2 rounded-full transition">
-                        Exact Dates
-                    </button>
-                    <button 
-                        @click="$store.app.dateType = 'flexible'" 
-                        :class="$store.app.dateType === 'flexible' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'"
-                        class="px-4 py-2 rounded-full transition">
-                        Flexible Dates
-                    </button>
-                </div>
-                <div class="flex space-x-4 items-center">
-                    <div class="relative" x-data="{ open: false, selectedStops: 1 }">
-                        <button @click="open = !open" class="text-gray-700 flex items-center py-2">
-                            <span class="material-symbols-outlined mr-1">connecting_airports</span>
-                            <span x-text="selectedStops === 0 ? 'Nonstop only' : selectedStops === 1 ? '1 stop or fewer' : '2 stops or fewer'">1 stop or fewer</span>
-                            <span class="material-symbols-outlined ml-1">arrow_drop_down</span>
-                        </button>
-                        <div x-show="open" @click.away="open = false" x-cloak class="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
-                            <div class="py-1">
-                                <a href="#" @click.prevent="selectedStops = 0; $dispatch('stops-changed', 0); open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" :class="selectedStops === 0 ? 'bg-blue-50 text-blue-700' : ''">Nonstop only</a>
-                                <a href="#" @click.prevent="selectedStops = 1; $dispatch('stops-changed', 1); open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" :class="selectedStops === 1 ? 'bg-blue-50 text-blue-700' : ''">1 stop or fewer</a>
-                                <a href="#" @click.prevent="selectedStops = 2; $dispatch('stops-changed', 2); open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" :class="selectedStops === 2 ? 'bg-blue-50 text-blue-700' : ''">2 stops or fewer</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="relative" x-data="{ open: false, passengerCount: 1 }">
-                        <button @click="open = !open" class="text-gray-700 flex items-center py-2">
-                            <span class="material-symbols-outlined mr-1">person</span>
-                            <span x-text="passengerCount" class="inline-block min-w-[14px] text-center">1</span>
-                            <span class="material-symbols-outlined ml-1">arrow_drop_down</span>
-                        </button>
-                        <div x-show="open" @click.away="open = false" x-cloak class="absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg z-10 p-4">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <div class="font-medium">Travelers</div>
-                                </div>
-                                <div class="flex items-center space-x-3">
-                                    <button @click="passengerCount = Math.max(1, passengerCount - 1)" 
-                                            class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center" 
-                                            :class="passengerCount <= 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'">
-                                        <span class="material-symbols-outlined text-sm">remove</span>
-                                    </button>
-                                    <span x-text="passengerCount" class="min-w-[20px] text-center">1</span>
-                                    <button @click="passengerCount = Math.min(9, passengerCount + 1)" 
-                                            class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center"
-                                            :class="passengerCount >= 9 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'">
-                                        <span class="material-symbols-outlined text-sm">add</span>
-                                    </button>
-                                </div>
-                            </div>
-                            <div x-show="passengerCount >= 9" class="mt-2 text-red-500 text-xs text-center">
-                                Sorry, 9 travelers is the max.
-                            </div>
-                        </div>
-                    </div>
-                    <div class="relative" x-data="{ open: false, selectedClass: 'Economy' }">
-                        <button @click="open = !open" class="text-gray-700 flex items-center py-2">
-                            <span class="material-symbols-outlined mr-1">chair</span>
-                            <span x-text="selectedClass">Economy</span>
-                            <span class="material-symbols-outlined ml-1">arrow_drop_down</span>
-                        </button>
-                        <div x-show="open" @click.away="open = false" x-cloak class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
-                            <div class="py-1">
-                                <a href="#" @click.prevent="selectedClass = 'Economy'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Economy</a>
-                                <a href="#" @click.prevent="selectedClass = 'Premium economy'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Premium economy</a>
-                                <a href="#" @click.prevent="selectedClass = 'Business'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Business</a>
-                                <a href="#" @click.prevent="selectedClass = 'First'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">First</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <h1 class="text-2xl font-bold text-gray-800 mb-4">Find Your Perfect Vacation Package</h1>
             
             <div x-data="searchForm()" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                <div class="border border-gray-300 rounded-lg p-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 grid-input" x-data="{ 
-                    budgetValue: 500,
-                    formatBudget(value) {
-                        if (value >= 5000) return '$5,000+';
-                        return '$' + value.toLocaleString();
-                    }
-                }">
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="text-sm text-gray-600">Budget (per person)</label>
-                        <span class="text-lg font-medium" x-text="formatBudget(budgetValue)">$500</span>
-                    </div>
-                    <input 
-                        type="range" 
-                        min="100" 
-                        max="5000" 
-                        step="100"
-                        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider" 
-                        x-model="budgetValue"
-                        @input="$dispatch('budget-changed', budgetValue)"
-                    >
-                </div>
-                
-                <div class="border border-gray-300 rounded-lg p-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 grid-input">
+                <!-- From Airport -->
+                <div class="border border-gray-300 rounded-lg p-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
                     <label class="block text-sm text-gray-600 mb-1">From</label>
                     <div class="flex items-center relative" x-data="airportFrom()">
                         <span class="material-symbols-outlined text-gray-500 mr-2">flight_takeoff</span>
@@ -218,8 +93,9 @@
                     </div>
                 </div>
                 
-                <!-- <div 
-                    class="border border-gray-300 rounded-lg p-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 grid-input"
+                <!-- To Airport -->
+                <div 
+                    class="border border-gray-300 rounded-lg p-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500"
                     :class="{ 'flash-border': toFieldError }"
                     x-ref="toField">
                     <label class="block text-sm text-gray-600 mb-1">To</label>
@@ -246,222 +122,158 @@
                             </div>
                         </div>
                     </div>
-                </div> -->
+                </div>
                 
-                <div class="border border-gray-300 rounded-lg p-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 grid-input">
+                <!-- Dates -->
+                <div class="border border-gray-300 rounded-lg p-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
                     <label class="block text-sm text-gray-600 mb-1">Dates</label>
                     <div class="flex items-center">
                         <span class="material-symbols-outlined text-gray-500 mr-2">calendar_month</span>
-                        
-                        <!-- Date selector based on dateType -->
                         <div class="relative w-full" x-data="{ 
-                            open: false, 
                             departDateOpen: false,
                             returnDateOpen: false,
-                            departMonth: 5, // June (0-indexed)
-                            returnMonth: 5,
+                            departMonth: 7, // August (0-indexed)
+                            returnMonth: 7,
                             departYear: 2025,
                             returnYear: 2025,
-                            selectedDuration: '4 days in June',
-                            departDate: new Date('2025-06-22'), 
-                            returnDate: new Date('2025-06-26'),
+                            departDate: new Date('2025-08-01'), 
+                            returnDate: new Date('2025-08-08'),
                             
-                            // Month names for display
                             monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
                                         'August', 'September', 'October', 'November', 'December'],
                             
-                            // Format date to 'Mon, June 2' format
                             formatDate(date) {
                                 if (!(date instanceof Date)) {
                                     date = new Date(date);
                                 }
                                 const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                                const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-                                return `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()}`;
+                                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                                return `${months[date.getMonth()]} ${date.getDate()}`;
                             },
                             
-                            // Get days in month
                             getDaysInMonth(year, month) {
                                 return new Date(year, month + 1, 0).getDate();
                             },
                             
-                            // Get first day of month (0 = Sunday, 1 = Monday, etc.)
                             getFirstDayOfMonth(year, month) {
                                 return new Date(year, month, 1).getDay();
                             },
                             
-                            // Generate calendar days
                             getCalendarDays(year, month) {
                                 const daysInMonth = this.getDaysInMonth(year, month);
                                 const firstDay = this.getFirstDayOfMonth(year, month);
-                                
-                                // Create blank spaces for days before the 1st
                                 const days = Array(firstDay).fill(null);
-                                
-                                // Add the actual days of the month
                                 for (let i = 1; i <= daysInMonth; i++) {
                                     days.push(i);
                                 }
-                                
                                 return days;
                             },
                             
-                            // Initialize months
                             init() {
                                 this.departMonth = this.departDate.getMonth();
                                 this.returnMonth = this.returnDate.getMonth();
                                 this.departYear = this.departDate.getFullYear();
                                 this.returnYear = this.returnDate.getFullYear();
+                                this.$dispatch('dates-changed', { depart: this.departDate, return: this.returnDate });
                             }
                         }">
-                            
-                            <!-- Exact Dates Option -->
-                            <div x-show="$store.app.dateType === 'exact'">
-                                <div class="flex items-center w-full text-left space-x-1">
-                                    <div class="relative flex-1">
-                                        <input 
-                                            type="text" 
-                                            x-model="formatDate(departDate)" 
-                                            @click="departDateOpen = true"
-                                            placeholder="Departure" 
-                                            class="w-full text-lg outline-none cursor-pointer" 
-                                            readonly
-                                        />
-                                        <div 
-                                            x-show="departDateOpen" 
-                                            @click.away="departDateOpen = false" 
-                                            class="absolute top-full left-0 mt-1 bg-white shadow-lg rounded-md p-2 z-20 w-64"
-                                            x-cloak
-                                        >
-                                            <div class="flex justify-between items-center mb-2">
-                                                <button 
-                                                    @click.prevent="departMonth--; if(departMonth < 0) { departMonth = 11; departYear--; }"
-                                                    class="text-gray-700 hover:text-blue-500"
-                                                >
-                                                    &lt;
-                                                </button>
-                                                <div class="font-medium" x-text="monthNames[departMonth] + ' ' + departYear"></div>
-                                                <button 
-                                                    @click.prevent="departMonth++; if(departMonth > 11) { departMonth = 0; departYear++; }"
-                                                    class="text-gray-700 hover:text-blue-500"
-                                                >
-                                                    &gt;
-                                                </button>
-                                            </div>
-                                            <div class="grid grid-cols-7 gap-1">
-                                                <template x-for="day in ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']">
-                                                    <div class="text-center text-xs font-bold text-gray-600 p-1" x-text="day"></div>
-                                                </template>
-                                                
-                                                <template x-for="(day, index) in getCalendarDays(departYear, departMonth)">
-                                                    <div 
-                                                        x-show="day !== null"
-                                                        @click="if(day) { departDate = new Date(departYear, departMonth, day); departDateOpen = false; }"
-                                                        :class="day && day === departDate.getDate() && departMonth === departDate.getMonth() && departYear === departDate.getFullYear() ? 
-                                                                'bg-blue-500 text-white' : 'hover:bg-gray-100'"
-                                                        class="text-center p-1 cursor-pointer rounded-sm"
-                                                        x-text="day"
-                                                    ></div>
-                                                    <div x-show="day === null" class="p-1"></div>
-                                                </template>
-                                            </div>
+                            <div class="flex items-center w-full text-left space-x-1">
+                                <div class="relative flex-1">
+                                    <input 
+                                        type="text" 
+                                        x-model="formatDate(departDate)" 
+                                        @click="departDateOpen = true"
+                                        placeholder="Departure" 
+                                        class="w-full text-lg outline-none cursor-pointer" 
+                                        readonly
+                                    />
+                                    <div 
+                                        x-show="departDateOpen" 
+                                        @click.away="departDateOpen = false" 
+                                        class="absolute top-full left-0 mt-1 bg-white shadow-lg rounded-md p-2 z-20 w-64"
+                                        x-cloak
+                                    >
+                                        <div class="flex justify-between items-center mb-2">
+                                            <button 
+                                                @click.prevent="departMonth--; if(departMonth < 0) { departMonth = 11; departYear--; }"
+                                                class="text-gray-700 hover:text-blue-500"
+                                            >
+                                                &lt;
+                                            </button>
+                                            <div class="font-medium" x-text="monthNames[departMonth] + ' ' + departYear"></div>
+                                            <button 
+                                                @click.prevent="departMonth++; if(departMonth > 11) { departMonth = 0; departYear++; }"
+                                                class="text-gray-700 hover:text-blue-500"
+                                            >
+                                                &gt;
+                                            </button>
                                         </div>
-                                    </div>
-                                    <span class="text-gray-500 px-1">to</span>
-                                    <div class="relative flex-1">
-                                        <input 
-                                            type="text" 
-                                            x-model="formatDate(returnDate)" 
-                                            @click="returnDateOpen = true"
-                                            placeholder="Return" 
-                                            class="w-full text-lg outline-none cursor-pointer" 
-                                            readonly
-                                        />
-                                        <div 
-                                            x-show="returnDateOpen" 
-                                            @click.away="returnDateOpen = false" 
-                                            class="absolute top-full right-0 mt-1 bg-white shadow-lg rounded-md p-2 z-20 w-64"
-                                            x-cloak
-                                        >
-                                            <div class="flex justify-between items-center mb-2">
-                                                <button 
-                                                    @click.prevent="returnMonth--; if(returnMonth < 0) { returnMonth = 11; returnYear--; }"
-                                                    class="text-gray-700 hover:text-blue-500"
-                                                >
-                                                    &lt;
-                                                </button>
-                                                <div class="font-medium" x-text="monthNames[returnMonth] + ' ' + returnYear"></div>
-                                                <button 
-                                                    @click.prevent="returnMonth++; if(returnMonth > 11) { returnMonth = 0; returnYear++; }"
-                                                    class="text-gray-700 hover:text-blue-500"
-                                                >
-                                                    &gt;
-                                                </button>
-                                            </div>
-                                            <div class="grid grid-cols-7 gap-1">
-                                                <template x-for="day in ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']">
-                                                    <div class="text-center text-xs font-bold text-gray-600 p-1" x-text="day"></div>
-                                                </template>
-                                                
-                                                <template x-for="(day, index) in getCalendarDays(returnYear, returnMonth)">
-                                                    <div 
-                                                        x-show="day !== null"
-                                                        @click="if(day) { returnDate = new Date(returnYear, returnMonth, day); returnDateOpen = false; }"
-                                                        :class="day && day === returnDate.getDate() && returnMonth === returnDate.getMonth() && returnYear === returnDate.getFullYear() ? 
-                                                                'bg-blue-500 text-white' : 'hover:bg-gray-100'"
-                                                        class="text-center p-1 cursor-pointer rounded-sm"
-                                                        x-text="day"
-                                                    ></div>
-                                                    <div x-show="day === null" class="p-1"></div>
-                                                </template>
-                                            </div>
+                                        <div class="grid grid-cols-7 gap-1">
+                                            <template x-for="day in ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']">
+                                                <div class="text-center text-xs font-bold text-gray-600 p-1" x-text="day"></div>
+                                            </template>
+                                            
+                                            <template x-for="(day, index) in getCalendarDays(departYear, departMonth)">
+                                                <div 
+                                                    x-show="day !== null"
+                                                    @click="if(day) { departDate = new Date(departYear, departMonth, day); departDateOpen = false; $dispatch('dates-changed', { depart: departDate, return: returnDate }); }"
+                                                    :class="day && day === departDate.getDate() && departMonth === departDate.getMonth() && departYear === departDate.getFullYear() ? 
+                                                            'bg-blue-500 text-white' : 'hover:bg-gray-100'"
+                                                    class="text-center p-1 cursor-pointer rounded-sm"
+                                                    x-text="day"
+                                                ></div>
+                                                <div x-show="day === null" class="p-1"></div>
+                                            </template>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            
-                            <!-- Flexible Dates Option -->
-                            <div x-show="$store.app.dateType === 'flexible'">
-                                <button @click="open = !open" class="flex items-center justify-between w-full text-left">
-                                    <span x-text="selectedDuration" class="text-lg outline-none">4 days in June</span>
-                                    <span class="material-symbols-outlined text-gray-500">arrow_drop_down</span>
-                                </button>
-                                <div x-show="open" @click.away="open = false" x-cloak class="absolute left-0 right-0 mt-2 bg-white rounded-md shadow-lg z-10">
-                                    <div class="p-3">
-                                        <div class="mb-4 pb-3 border-b border-gray-200">
-                                            <div class="flex items-center justify-between mb-2">
-                                                <span class="text-sm font-medium text-gray-700">Days</span>
-                                                <div class="flex items-center space-x-3">
-                                                    <button @click="selectedDuration = selectedDuration.replace(/^\d+/, Math.max(2, parseInt(selectedDuration.match(/^\d+/)[0]) - 1))" 
-                                                            class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center" 
-                                                            :class="parseInt(selectedDuration.match(/^\d+/)[0]) <= 2 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'">
-                                                        <span class="material-symbols-outlined text-sm">remove</span>
-                                                    </button>
-                                                    <span x-text="selectedDuration.match(/^\d+/)[0]" class="min-w-[20px] text-center">4</span>
-                                                    <button @click="selectedDuration = selectedDuration.replace(/^\d+/, Math.min(60, parseInt(selectedDuration.match(/^\d+/)[0]) + 1))" 
-                                                            class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center"
-                                                            :class="parseInt(selectedDuration.match(/^\d+/)[0]) >= 60 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'">
-                                                        <span class="material-symbols-outlined text-sm">add</span>
-                                                    </button>
-                                                </div>
-                                            </div>
+                                <span class="text-gray-500 px-1">-</span>
+                                <div class="relative flex-1">
+                                    <input 
+                                        type="text" 
+                                        x-model="formatDate(returnDate)" 
+                                        @click="returnDateOpen = true"
+                                        placeholder="Return" 
+                                        class="w-full text-lg outline-none cursor-pointer" 
+                                        readonly
+                                    />
+                                    <div 
+                                        x-show="returnDateOpen" 
+                                        @click.away="returnDateOpen = false" 
+                                        class="absolute top-full right-0 mt-1 bg-white shadow-lg rounded-md p-2 z-20 w-64"
+                                        x-cloak
+                                    >
+                                        <div class="flex justify-between items-center mb-2">
+                                            <button 
+                                                @click.prevent="returnMonth--; if(returnMonth < 0) { returnMonth = 11; returnYear--; }"
+                                                class="text-gray-700 hover:text-blue-500"
+                                            >
+                                                &lt;
+                                            </button>
+                                            <div class="font-medium" x-text="monthNames[returnMonth] + ' ' + returnYear"></div>
+                                            <button 
+                                                @click.prevent="returnMonth++; if(returnMonth > 11) { returnMonth = 0; returnYear++; }"
+                                                class="text-gray-700 hover:text-blue-500"
+                                            >
+                                                &gt;
+                                            </button>
                                         </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-2">Month</label>
-                                            <div class="grid grid-cols-4 gap-2">
-                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in January'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Jan</button>
-                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in February'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Feb</button>
-                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in March'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Mar</button>
-                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in April'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Apr</button>
-                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in May'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">May</button>
-                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in June'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100" :class="selectedDuration.includes('June') ? 'bg-blue-50 border-blue-200' : ''">Jun</button>
-                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in July'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Jul</button>
-                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in August'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Aug</button>
-                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in September'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Sep</button>
-                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in October'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Oct</button>
-                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in November'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Nov</button>
-                                                <button @click="selectedDuration = selectedDuration.replace(/in \w+/, 'in December'); open = false" class="py-1 px-2 text-sm border rounded hover:bg-gray-100">Dec</button>
-                                            </div>
+                                        <div class="grid grid-cols-7 gap-1">
+                                            <template x-for="day in ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']">
+                                                <div class="text-center text-xs font-bold text-gray-600 p-1" x-text="day"></div>
+                                            </template>
+                                            
+                                            <template x-for="(day, index) in getCalendarDays(returnYear, returnMonth)">
+                                                <div 
+                                                    x-show="day !== null"
+                                                    @click="if(day) { returnDate = new Date(returnYear, returnMonth, day); returnDateOpen = false; $dispatch('dates-changed', { depart: departDate, return: returnDate }); }"
+                                                    :class="day && day === returnDate.getDate() && returnMonth === returnDate.getMonth() && returnYear === returnDate.getFullYear() ? 
+                                                            'bg-blue-500 text-white' : 'hover:bg-gray-100'"
+                                                    class="text-center p-1 cursor-pointer rounded-sm"
+                                                    x-text="day"
+                                                ></div>
+                                                <div x-show="day === null" class="p-1"></div>
+                                            </template>
                                         </div>
                                     </div>
                                 </div>
@@ -470,179 +282,136 @@
                     </div>
                 </div>
                 
+                <!-- Travelers -->
+                <div class="relative" x-data="{ open: false, passengerCount: 2 }">
+                    <div @click="open = !open" class="border border-gray-300 rounded-lg p-3 cursor-pointer hover:border-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                        <label class="block text-sm text-gray-600 mb-1">Travelers</label>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <span class="material-symbols_outlined text-gray-500 mr-2">person</span>
+                                <span x-text="passengerCount + ' ' + (passengerCount === 1 ? 'Traveler' : 'Travelers')" class="text-lg">2 Travelers</span>
+                            </div>
+                            <span class="material-symbols-outlined text-gray-500">arrow_drop_down</span>
+                        </div>
+                    </div>
+                    <div x-show="open" @click.away="open = false" x-cloak class="absolute left-0 mt-2 w-full bg-white rounded-md shadow-lg z-10 p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="font-medium">Travelers</div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <button @click="passengerCount = Math.max(1, passengerCount - 1); $dispatch('passengers-changed', passengerCount); $store.app.passengers = passengerCount" 
+                                        class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center" 
+                                        :class="passengerCount <= 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'">
+                                    <span class="material-symbols-outlined text-sm">remove</span>
+                                </button>
+                                <span x-text="passengerCount" class="min-w-[20px] text-center">2</span>
+                                <button @click="passengerCount = Math.min(9, passengerCount + 1); $dispatch('passengers-changed', passengerCount); $store.app.passengers = passengerCount" 
+                                        class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center"
+                                        :class="passengerCount >= 9 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'">
+                                    <span class="material-symbols-outlined text-sm">add</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div x-show="passengerCount >= 9" class="mt-2 text-red-500 text-xs text-center">
+                            Sorry, 9 travelers is the max.
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Search Button -->
                 <div class="flex items-center justify-center mt-2 mb-0 col-span-1 md:col-span-2 lg:col-span-3">
                     <button 
                         class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition flex items-center"
                         @click="validateSearch"
                     >
                         <span class="material-symbols-outlined mr-2">search</span>
-                        Search
+                        Search Vacation Packages
                     </button>
                 </div>
+            </div>
+        </div>
+        
+        <!-- Results Section -->
+        <div id="results-section" class="bg-white rounded-lg shadow-md p-6 mb-6" x-show="resultsVisible" x-data="{ resultsVisible: false }" x-cloak>
+            <h2 id="results-title" class="text-xl font-semibold mb-4">Vacation Packages</h2>
+            
+            <div id="packages-container">
+                <!-- Vacation package results will be inserted here dynamically -->
             </div>
         </div>
         
         <!-- Popular Destinations Section -->
         <div class="mb-8">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-6">Popular destinations</h2>
+            <h2 class="text-2xl font-semibold text-gray-800 mb-6">Popular vacation destinations</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <!-- Texas Card -->
+                <!-- Orlando Card -->
                 <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition cursor-pointer">
-                    <div class="h-48 bg-gradient-to-br from-yellow-500 to-orange-600 relative">
+                    <div class="h-48 bg-gradient-to-br from-orange-500 to-pink-600 relative">
                         <div class="absolute inset-0 bg-black bg-opacity-20"></div>
                         <div class="absolute bottom-4 left-4 text-white">
-                            <h3 class="text-xl font-semibold">Texas</h3>
-                            <p class="text-sm opacity-90">United States</p>
+                            <h3 class="text-xl font-semibold">Orlando</h3>
+                            <p class="text-sm opacity-90">Florida</p>
                         </div>
                     </div>
                     <div class="p-4">
                         <div class="flex justify-between items-center">
-                            <span class="text-gray-600 text-sm">Round trip from</span>
-                            <span class="text-xl font-semibold text-blue-600">$195</span>
+                            <span class="text-gray-600 text-sm">Packages from</span>
+                            <span class="text-xl font-semibold text-blue-600">$450</span>
                         </div>
                     </div>
                 </div>
                 
-                <!-- New York Card -->
-                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition cursor-pointer">
-                    <div class="h-48 bg-gradient-to-br from-blue-500 to-indigo-600 relative">
-                        <div class="absolute inset-0 bg-black bg-opacity-20"></div>
-                        <div class="absolute bottom-4 left-4 text-white">
-                            <h3 class="text-xl font-semibold">New York</h3>
-                            <p class="text-sm opacity-90">United States</p>
-                        </div>
-                    </div>
-                    <div class="p-4">
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600 text-sm">Round trip from</span>
-                            <span class="text-xl font-semibold text-blue-600">$283</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Los Angeles Card -->
+                <!-- Las Vegas Card -->
                 <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition cursor-pointer">
                     <div class="h-48 bg-gradient-to-br from-purple-500 to-indigo-600 relative">
                         <div class="absolute inset-0 bg-black bg-opacity-20"></div>
                         <div class="absolute bottom-4 left-4 text-white">
-                            <h3 class="text-xl font-semibold">Los Angeles</h3>
-                            <p class="text-sm opacity-90">United States</p>
+                            <h3 class="text-xl font-semibold">Las Vegas</h3>
+                            <p class="text-sm opacity-90">Nevada</p>
                         </div>
                     </div>
                     <div class="p-4">
                         <div class="flex justify-between items-center">
-                            <span class="text-gray-600 text-sm">Round trip from</span>
-                            <span class="text-xl font-semibold text-blue-600">$324</span>
+                            <span class="text-gray-600 text-sm">Packages from</span>
+                            <span class="text-xl font-semibold text-blue-600">$380</span>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Barcelona Card -->
+                <!-- Miami Card -->
                 <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition cursor-pointer">
                     <div class="h-48 bg-gradient-to-br from-cyan-500 to-blue-600 relative">
                         <div class="absolute inset-0 bg-black bg-opacity-20"></div>
                         <div class="absolute bottom-4 left-4 text-white">
-                            <h3 class="text-xl font-semibold">Barcelona</h3>
-                            <p class="text-sm opacity-90">Spain</p>
+                            <h3 class="text-xl font-semibold">Miami</h3>
+                            <p class="text-sm opacity-90">Florida</p>
                         </div>
                     </div>
                     <div class="p-4">
                         <div class="flex justify-between items-center">
-                            <span class="text-gray-600 text-sm">Round trip from</span>
-                            <span class="text-xl font-semibold text-blue-600">$456</span>
+                            <span class="text-gray-600 text-sm">Packages from</span>
+                            <span class="text-xl font-semibold text-blue-600">$520</span>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Paris Card -->
+                <!-- Cancun Card -->
                 <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition cursor-pointer">
-                    <div class="h-48 bg-gradient-to-br from-pink-400 to-purple-500 relative">
+                    <div class="h-48 bg-gradient-to-br from-teal-500 to-green-600 relative">
                         <div class="absolute inset-0 bg-black bg-opacity-20"></div>
                         <div class="absolute bottom-4 left-4 text-white">
-                            <h3 class="text-xl font-semibold">Paris</h3>
-                            <p class="text-sm opacity-90">France</p>
+                            <h3 class="text-xl font-semibold">Cancun</h3>
+                            <p class="text-sm opacity-90">Mexico</p>
                         </div>
                     </div>
                     <div class="p-4">
                         <div class="flex justify-between items-center">
-                            <span class="text-gray-600 text-sm">Round trip from</span>
-                            <span class="text-xl font-semibold text-blue-600">$489</span>
+                            <span class="text-gray-600 text-sm">Packages from</span>
+                            <span class="text-xl font-semibold text-blue-600">$680</span>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Amsterdam Card -->
-                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition cursor-pointer">
-                    <div class="h-48 bg-gradient-to-br from-orange-400 to-red-500 relative">
-                        <div class="absolute inset-0 bg-black bg-opacity-20"></div>
-                        <div class="absolute bottom-4 left-4 text-white">
-                            <h3 class="text-xl font-semibold">Amsterdam</h3>
-                            <p class="text-sm opacity-90">Netherlands</p>
-                        </div>
-                    </div>
-                    <div class="p-4">
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600 text-sm">Round trip from</span>
-                            <span class="text-xl font-semibold text-blue-600">$524</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- London Card -->
-                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition cursor-pointer">
-                    <div class="h-48 bg-gradient-to-br from-green-500 to-teal-600 relative">
-                        <div class="absolute inset-0 bg-black bg-opacity-20"></div>
-                        <div class="absolute bottom-4 left-4 text-white">
-                            <h3 class="text-xl font-semibold">London</h3>
-                            <p class="text-sm opacity-90">United Kingdom</p>
-                        </div>
-                    </div>
-                    <div class="p-4">
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600 text-sm">Round trip from</span>
-                            <span class="text-xl font-semibold text-blue-600">$567</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Tokyo Card -->
-                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition cursor-pointer">
-                    <div class="h-48 bg-gradient-to-br from-red-500 to-pink-600 relative">
-                        <div class="absolute inset-0 bg-black bg-opacity-20"></div>
-                        <div class="absolute bottom-4 left-4 text-white">
-                            <h3 class="text-xl font-semibold">Tokyo</h3>
-                            <p class="text-sm opacity-90">Japan</p>
-                        </div>
-                    </div>
-                    <div class="p-4">
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-600 text-sm">Round trip from</span>
-                            <span class="text-xl font-semibold text-blue-600">$789</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div id="results-section" class="bg-white rounded-lg shadow-md p-6 mb-6" x-show="resultsVisible" x-data="{ resultsVisible: false }" x-cloak>
-            <h2 id="results-title" class="text-xl font-semibold mb-4">Best flights</h2>
-            
-            <div class="mb-6 flex items-center justify-between text-sm text-gray-600 border-b pb-4">
-                <div>Sort by: <span class="font-semibold">Price</span></div>
-                <div class="flex space-x-4">
-                    <button class="flex items-center">
-                        <span class="material-symbols-outlined mr-1">filter_list</span>
-                        Filters
-                    </button>
-                    <button class="flex items-center">
-                        <span class="material-symbols-outlined mr-1">swap_vert</span>
-                        Sort
-                    </button>
-                </div>
-            </div>
-            
-            <div id="flights-container">
-                <!-- Flight results will be inserted here dynamically -->
             </div>
         </div>
     </main>
@@ -651,94 +420,190 @@
         <div class="container mx-auto px-4">
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <div class="flex flex-wrap justify-center md:justify-start space-x-4 text-sm text-gray-600">
-                    <a href="#" class="hover:text-gray-900 mb-2 md:mb-0">Privacy</a>
-                    <a href="#" class="hover:text-gray-900 mb-2 md:mb-0">Terms</a>
+                    <span>Delta Vacations API Demo</span>
+                    <a href="/api/docs" class="hover:text-gray-900">API Documentation</a>
                 </div>
             </div>
         </div>
     </footer>
 
     <script>
-        // Function to format flight data for display
-        function formatFlightResults(flights) {
-            return flights.map((flight, index) => {
+        // Function to format vacation package results for display
+        function formatPackageResults(data, passengers = 2) {
+            if (!data.packages || data.packages.length === 0) {
+                return '<div class="text-center py-10 text-gray-600">No vacation packages found. Try different dates or destinations.</div>';
+            }
+            
+            let html = `
+                <div class="mb-4 text-sm text-gray-600">
+                    Found ${data.searchInfo.totalResults} packages for ${data.searchInfo.origin} to ${data.searchInfo.destination}
+                </div>
+            `;
+            
+            return html + data.packages.map((pkg) => {
+                try {
+                    const amenityIcons = {
+                    'Pool': 'pool',
+                    'Fitness Center': 'fitness_center',
+                    'In Room Wi-Fi Access': 'wifi',
+                    'Kitchen': 'kitchen',
+                    'Spa': 'spa',
+                    'Restaurant/Bar': 'restaurant',
+                    'Beachfront': 'beach_access',
+                    'Golf on Property': 'golf_course'
+                };
+                
                 return `
-                <div class="border border-gray-200 rounded-lg p-4 mb-4 hover:shadow-md transition">
-                    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4">
-                        <div class="flex items-center mb-2 md:mb-0">
-                            <div class="bg-gray-200 rounded-full h-10 w-10 flex items-center justify-center mr-3">
-                                <span class="material-symbols-outlined">flight</span>
-                            </div>
-                            <div>
-                                <div class="font-semibold">${flight.airline}</div>
-                                <div class="text-sm text-gray-600">Flight ${index + 1}</div>
-                            </div>
-                        </div>
-                        
-                        <div class="flex flex-col md:flex-row items-start md:items-center md:space-x-8">
-                            <div class="text-center md:text-left mb-2 md:mb-0">
-                                <div class="text-lg font-semibold">${flight.departureTime}</div>
-                                <div class="text-sm text-gray-600">ATL</div>
-                            </div>
-                            
-                            <div class="text-center flex flex-col items-center mb-2 md:mb-0">
-                                <div class="text-sm text-gray-600">${flight.duration}</div>
-                                <div class="relative w-24 h-1 bg-gray-300">
-                                    <div class="absolute w-2 h-2 bg-gray-400 rounded-full -top-0.5 left-0"></div>
-                                    <div class="absolute w-2 h-2 bg-gray-400 rounded-full -top-0.5 right-0"></div>
+                <div class="border border-gray-200 rounded-lg p-6 mb-4 hover:shadow-lg transition">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Hotel Section -->
+                        <div class="lg:col-span-2">
+                            <div class="flex items-start justify-between mb-4">
+                                <div>
+                                    <h3 class="text-xl font-semibold text-gray-800">${pkg.hotel.name}</h3>
+                                    <div class="flex items-center mt-1">
+                                        <div class="flex">
+                                            ${pkg.hotel.starRating ? Array(pkg.hotel.starRating).fill('').map(() => '<span class="material-symbols-outlined text-yellow-500 text-sm">star</span>').join('') : ''}
+                                        </div>
+                                        <span class="ml-2 text-sm text-gray-600">${pkg.hotel.starRating || 0} Star Hotel</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mt-1">${pkg.hotel.location ? pkg.hotel.location.city : 'Orlando'}, FL</p>
                                 </div>
-                                <div class="text-sm text-gray-600">Nonstop</div>
                             </div>
                             
-                            <div class="text-center md:text-right">
-                                <div class="text-lg font-semibold">${flight.arrivalTime}</div>
-                                <div class="text-sm text-gray-600">NYC</div>
+                            <div class="mb-4">
+                                <h4 class="font-medium text-gray-700 mb-2">Amenities</h4>
+                                <div class="flex flex-wrap gap-2">
+                                    ${pkg.hotel.amenities && pkg.hotel.amenities.length > 0 ? 
+                                        pkg.hotel.amenities.map(amenity => `
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs bg-gray-100 text-gray-700">
+                                                <span class="material-symbols-outlined text-sm mr-1">${amenityIcons[amenity] || 'check_circle'}</span>
+                                                ${amenity}
+                                            </span>
+                                        `).join('') : 
+                                        '<span class="text-sm text-gray-500">No amenities listed</span>'
+                                    }
+                                </div>
+                            </div>
+                            
+                            <!-- Flight Info -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="bg-gray-50 rounded-lg p-4">
+                                    <h4 class="font-medium text-gray-700 mb-2 flex items-center">
+                                        <span class="material-symbols-outlined text-sm mr-1">flight_takeoff</span>
+                                        Outbound Flight
+                                    </h4>
+                                    <div class="text-sm">
+                                        <div class="font-medium">${pkg.flight.outbound.airline} ${pkg.flight.outbound.flightNumber}</div>
+                                        <div class="mt-1">
+                                            <span class="font-semibold">${pkg.flight.outbound.departure.time}</span> ${pkg.flight.outbound.departure.airport}
+                                            <span class="text-gray-500 mx-1">→</span>
+                                            <span class="font-semibold">${pkg.flight.outbound.arrival.time}</span> ${pkg.flight.outbound.arrival.airport}
+                                        </div>
+                                        <div class="text-gray-600 mt-1">${pkg.flight.outbound.duration} • ${pkg.flight.outbound.stops === 0 ? 'Nonstop' : pkg.flight.outbound.stops + ' stop(s)'}</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-gray-50 rounded-lg p-4">
+                                    <h4 class="font-medium text-gray-700 mb-2 flex items-center">
+                                        <span class="material-symbols-outlined text-sm mr-1">flight_land</span>
+                                        Return Flight
+                                    </h4>
+                                    <div class="text-sm">
+                                        <div class="font-medium">${pkg.flight.return.airline} ${pkg.flight.return.flightNumber}</div>
+                                        <div class="mt-1">
+                                            <span class="font-semibold">${pkg.flight.return.departure.time}</span> ${pkg.flight.return.departure.airport}
+                                            <span class="text-gray-500 mx-1">→</span>
+                                            <span class="font-semibold">${pkg.flight.return.arrival.time}</span> ${pkg.flight.return.arrival.airport}
+                                        </div>
+                                        <div class="text-gray-600 mt-1">${pkg.flight.return.duration} • ${pkg.flight.return.stops === 0 ? 'Nonstop' : pkg.flight.return.stops + ' stop(s)'}</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="text-right mt-3 md:mt-0">
-                            <div class="text-2xl font-semibold">${flight.price}</div>
-                            <div class="text-sm text-gray-600">Round trip</div>
+                        <!-- Price Section -->
+                        <div class="lg:col-span-1">
+                            <div class="bg-blue-50 rounded-lg p-4 sticky top-4">
+                                <div class="text-center mb-4">
+                                    <div class="text-3xl font-bold text-blue-600">
+                                        $${pkg.totalPrice.perPerson.toLocaleString()}
+                                    </div>
+                                    <div class="text-sm text-gray-600">per person</div>
+                                    <div class="mt-2 text-lg font-semibold">
+                                        $${pkg.totalPrice.total.toLocaleString()} total
+                                    </div>
+                                    <div class="text-sm text-gray-600">for ${passengers} travelers</div>
+                                </div>
+                                
+                                <div class="space-y-2 text-sm text-gray-700">
+                                    <div class="flex items-center">
+                                        <span class="material-symbols-outlined text-sm mr-2">hotel</span>
+                                        ${pkg.hotel.totalNights || 7} nights accommodation
+                                    </div>
+                                    <div class="flex items-center">
+                                        <span class="material-symbols-outlined text-sm mr-2">price_check</span>
+                                        $${pkg.hotel.pricePerNight ? pkg.hotel.pricePerNight.toFixed(2) : 'N/A'} per night
+                                    </div>
+                                    <div class="flex items-center">
+                                        <span class="material-symbols-outlined text-sm mr-2">flight</span>
+                                        Round-trip flights included
+                                    </div>
+                                </div>
+                                
+                                <button class="w-full mt-4 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                                    View Details
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>`;
+                } catch (error) {
+                    console.error('Error rendering package:', pkg, error);
+                    return `<div class="border border-red-200 rounded-lg p-4 mb-4 bg-red-50">
+                        <p class="text-red-600">Error displaying this package</p>
+                    </div>`;
+                }
             }).join('');
         }
 
         // Create a searchForm component for Alpine.js
         function searchForm() {
             return {
-                budgetMax: 500,
-                stopsPreference: 1,
-                fromCity: "Atlanta",
-                toCity: "New York",
-                departDate: "2025-06-22",
-                returnDate: "2025-06-25",
+                fromAirport: null,
+                toAirport: null,
+                departDate: "2025-08-01",
+                returnDate: "2025-08-08",
+                passengers: 2,
                 loading: false,
-                flights: [],
+                packages: [],
                 resultsVisible: false,
                 error: null,
                 toFieldError: false,
                 
                 init() {
-                    // Listen for budget changes
-                    this.$watch('budgetMax', (value) => {
-                        console.log('Budget changed to:', value);
+                    // Listen for airport selections
+                    this.$el.addEventListener('airport-from-selected', (event) => {
+                        this.fromAirport = event.detail;
                     });
                     
-                    // Listen for budget-changed events
-                    this.$el.addEventListener('budget-changed', (event) => {
-                        this.budgetMax = event.detail;
+                    this.$el.addEventListener('airport-to-selected', (event) => {
+                        this.toAirport = event.detail;
                     });
                     
-                    // Listen for stops preference changes
-                    this.$watch('stopsPreference', (value) => {
-                        console.log('Stops preference changed to:', value);
+                    // Listen for date changes
+                    this.$el.addEventListener('dates-changed', (event) => {
+                        if (event.detail.depart) {
+                            this.departDate = event.detail.depart.toISOString().split('T')[0];
+                        }
+                        if (event.detail.return) {
+                            this.returnDate = event.detail.return.toISOString().split('T')[0];
+                        }
                     });
                     
-                    // Listen for stops-changed events
-                    this.$el.addEventListener('stops-changed', (event) => {
-                        this.stopsPreference = event.detail;
+                    // Listen for passenger changes
+                    this.$el.addEventListener('passengers-changed', (event) => {
+                        this.passengers = event.detail;
                     });
                 },
                 
@@ -747,8 +612,13 @@
                     this.toFieldError = false;
                     this.error = null;
                     
-                    // Simple validation
-                    if (!this.toCity) {
+                    // Validation
+                    if (!this.fromAirport) {
+                        alert('Please select a departure airport');
+                        return;
+                    }
+                    
+                    if (!this.toAirport) {
                         this.toFieldError = true;
                         this.$refs.toField.classList.add('flash-border');
                         setTimeout(() => {
@@ -757,163 +627,78 @@
                         return;
                     }
                     
-                    // Search for flights
-                    this.searchFlights();
+                    // Search for packages
+                    this.searchPackages();
                 },
                 
-                searchFlights() {
+                searchPackages() {
                     this.loading = true;
                     this.resultsVisible = true;
                     
-                    // Get date values based on the selected date type
-                    const dateType = Alpine.store('app').dateType;
-                    
-                    let departDate, returnDate, isFlexible;
-                    
-                    if (dateType === 'exact') {
-                        try {
-                            // Get the date objects directly from the component
-                            const dateComponent = document.querySelector('.border .relative[x-data]').__x.$data;
-                            if (dateComponent && dateComponent.departDate && dateComponent.returnDate) {
-                                // Format dates as YYYY-MM-DD for API
-                                departDate = dateComponent.departDate instanceof Date ? 
-                                    dateComponent.departDate.toISOString().split('T')[0] : this.departDate;
-                                returnDate = dateComponent.returnDate instanceof Date ? 
-                                    dateComponent.returnDate.toISOString().split('T')[0] : this.returnDate;
-                            } else {
-                                departDate = this.departDate;
-                                returnDate = this.returnDate;
-                            }
-                        } catch (e) {
-                            console.error("Error accessing date component:", e);
-                            departDate = this.departDate;
-                            returnDate = this.returnDate;
-                        }
-                        isFlexible = false;
-                    } else {
-                        // For flexible dates, use the displayed text
-                        const flexDateElement = document.querySelector('button span.text-lg');
-                        const flexDateText = flexDateElement ? flexDateElement.textContent : '4 days in June';
-                        
-                        // Still use the default dates for the API call, but include flexible flag
-                        departDate = this.departDate;
-                        returnDate = this.returnDate;
-                        isFlexible = true;
-                    }
-                    
                     // Update results section title
                     document.getElementById('results-title').textContent = 
-                        `Best flights from ${this.fromCity} to ${this.toCity}`;
+                        `Vacation Packages: ${this.fromAirport.city} to ${this.toAirport.city}`;
                     
                     // Show loading state
-                    document.getElementById('flights-container').innerHTML = `
+                    document.getElementById('packages-container').innerHTML = `
                         <div class="flex justify-center items-center py-10">
                             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                         </div>
-                        <div class="text-center text-gray-600">Searching for the best flights...</div>
-                        <div class="text-center text-gray-500 mt-2 text-sm">This may take a minute - we're searching for the best prices</div>
+                        <div class="text-center text-gray-600">Searching for vacation packages...</div>
+                        <div class="text-center text-gray-500 mt-2 text-sm">This may take up to 30 seconds as we search Delta Vacations for the best deals</div>
                     `;
                     
                     // Scroll to results
                     document.getElementById('results-section').scrollIntoView({ behavior: 'smooth' });
                     
-                    // For development testing, just simulate a response
-                    setTimeout(() => {
-                        this.loading = false;
-                        this.flights = [
-                            {
-                                airline: "Southwest",
-                                departureTime: "1:30 PM",
-                                arrivalTime: "10:55 PM", 
-                                duration: "9 hr 25 min",
-                                price: "$138"
-                            },
-                            {
-                                airline: "Delta",
-                                departureTime: "8:30 AM",
-                                arrivalTime: "10:45 AM",
-                                duration: "2 hr 15 min",
-                                price: "$283"
-                            },
-                            {
-                                airline: "United",
-                                departureTime: "10:41 AM",
-                                arrivalTime: "12:53 PM",
-                                duration: "2 hr 12 min",
-                                price: "$120"
-                            }
-                        ];
-                        document.getElementById('flights-container').innerHTML = formatFlightResults(this.flights);
-                    }, 2000);
-                    
-                    // Comment this out and use the code below when you have a backend
-                    /* 
-                    // Make the API call to our backend
-                    fetch('/api/search-flights', {
+                    // Make the API call to the Delta Vacations backend
+                    fetch('http://localhost:3000/api/search-vacations', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            from: this.fromCity,
-                            to: this.toCity,
-                            departDate: departDate,
-                            returnDate: returnDate,
-                            isFlexible: isFlexible
+                            originCode: this.fromAirport.code,
+                            destinationCode: this.toAirport.code,
+                            departureDate: this.departDate,
+                            returnDate: this.returnDate,
+                            passengers: this.passengers || 2,
+                            destinationCity: this.toAirport.city,
+                            destinationAirport: this.toAirport.name
                         })
                     })
                     .then(response => {
-                        // Always parse the JSON, even if the status is not OK
                         return response.json().then(data => {
-                            // Add the status to the parsed data
                             return { ...data, status: response.status };
                         });
                     })
-                    .then(data => {
+                    .then(response => {
                         this.loading = false;
                         
-                        // Check if there's an error message in the response
-                        if (data.error) {
-                            // Show the error message, but still display flights if provided
-                            const errorHtml = `
-                                <div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800">
-                                    ${data.error}
-                                </div>
-                            `;
-                            
-                            // If we have flights, display them despite the error
-                            if (data.flights && data.flights.length > 0) {
-                                this.flights = data.flights;
-                                document.getElementById('flights-container').innerHTML = 
-                                    errorHtml + formatFlightResults(this.flights);
-                            } else {
-                                document.getElementById('flights-container').innerHTML = errorHtml + 
-                                    '<div class="text-center py-10 text-gray-600">No flights found. Try different dates or destinations.</div>';
-                            }
-                            return;
+                        if (!response.success) {
+                            throw new Error(response.message || 'Failed to search vacation packages');
                         }
                         
-                        // No error, process the flights normally
-                        this.flights = data.flights || [];
-                        
-                        if (this.flights.length > 0) {
-                            document.getElementById('flights-container').innerHTML = formatFlightResults(this.flights);
+                        if (response.data && response.data.packages) {
+                            this.packages = response.data.packages;
+                            document.getElementById('packages-container').innerHTML = formatPackageResults(response.data, this.passengers);
                         } else {
-                            document.getElementById('flights-container').innerHTML = 
-                                '<div class="text-center py-10 text-gray-600">No flights found. Try different dates or destinations.</div>';
+                            document.getElementById('packages-container').innerHTML = 
+                                '<div class="text-center py-10 text-gray-600">No packages found. Try different dates or destinations.</div>';
                         }
                     })
                     .catch(error => {
                         this.loading = false;
-                        console.error('Error fetching flights:', error);
-                        this.error = 'Failed to search flights. Please try again later.';
-                        document.getElementById('flights-container').innerHTML = `
-                            <div class="text-center py-10 text-red-600">
-                                ${this.error}
+                        console.error('Error fetching packages:', error);
+                        this.error = error.message || 'Failed to search vacation packages. Please try again later.';
+                        document.getElementById('packages-container').innerHTML = `
+                            <div class="text-center py-10">
+                                <div class="text-red-600 font-semibold mb-2">Error</div>
+                                <div class="text-gray-600">${this.error}</div>
+                                <div class="text-sm text-gray-500 mt-2">Make sure the API server is running on port 3000</div>
                             </div>
                         `;
                     });
-                    */
                 }
             };
         }
@@ -921,10 +706,15 @@
         // Create airport selection components for from/to fields
         function airportFrom() {
             return {
-                search: "Atlanta",
-                selected: null,
+                search: "Atlanta (ATL)",
+                selected: { code: 'ATL', city: 'Atlanta', name: 'Hartsfield-Jackson Atlanta International' },
                 showDropdown: false,
                 airports: window.airports || [],
+                
+                init() {
+                    // Dispatch initial selection
+                    this.$dispatch('airport-from-selected', this.selected);
+                },
                 
                 filteredAirports() {
                     if (!this.search || this.search.length < 2) return [];
@@ -947,7 +737,7 @@
         
         function airportTo() {
             return {
-                search: "New York",
+                search: "",
                 selected: null,
                 showDropdown: false,
                 airports: window.airports || [],
@@ -972,4 +762,4 @@
         }
     </script>
 </body>
-</html> 
+</html>

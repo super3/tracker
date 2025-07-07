@@ -186,8 +186,16 @@ router.addDefaultHandler(
     const searchParams = getSearchParams();
     log.info("Using search parameters:", searchParams);
 
-    // Wait for the page to load completely
-    await page.waitForLoadState("networkidle");
+    // Wait for the page to load with a shorter timeout and less strict conditions
+    try {
+      await page.waitForLoadState("domcontentloaded", { timeout: 15000 });
+      // Try to wait for network idle but don't fail if it times out
+      await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {
+        log.info("Network idle timeout - continuing anyway");
+      });
+    } catch (error) {
+      log.warn("Page load timeout - attempting to continue", error);
+    }
 
     // Get cookies from the page
     const cookies = await page.context().cookies();
@@ -228,6 +236,20 @@ router.addDefaultHandler(
 
     const title = await page.title();
     log.info(`Page title: ${title}`);
+    
+    // Take a screenshot for debugging
+    try {
+      await mkdir("./storage/screenshots", { recursive: true });
+      const screenshotPath = join("./storage/screenshots", `delta-vacations-${Date.now()}.png`);
+      await page.screenshot({ path: screenshotPath, fullPage: true });
+      log.info(`Screenshot saved to ${screenshotPath}`);
+    } catch (error) {
+      log.warn("Could not save screenshot:", error);
+    }
+    
+    // Check current URL
+    const currentUrl = page.url();
+    log.info(`Current URL: ${currentUrl}`);
 
     // Now use the cookies for API requests
     try {
